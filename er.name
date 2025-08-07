@@ -166,4 +166,32 @@ warning: in the working copy of 'src/screens/profileScreen.js', LF will be repla
 [32m+[m[32m                Please login to access your profile[m
 [32m+[m[32m              </Text>[m
 [32m+[m[32m              <Text style={styles.userLevel}>[m
-[32m+[m[32m                Login to uplo
+[32m+[m[32m                Login to upload coupons and track your progress[m
+[32m+[m[32m              </Text>[m
+[32m+[m[32m            </View>[m
+           </View>[m
+[31m-        </View>[m
+[32m+[m[32m        )}[m
+ [m
+[31m-        {/* Menu Items */}[m
+[31m-        <View style={styles.menuSection}>[m
+[32m+[m[32m        {/* Menu Items - Only show when authenticated */}[m
+[32m+[m[32m        {isAuthenticated && ([m
+[32m+[m[32m          <View style={styles.menuSection}>[m
+           <TouchableOpacity[m
+             style={styles.menuItem}[m
+             onPress={() => navigation.navigate('UserInformation')}[m
+[36m@@ -444,10 +482,10 @@[m [mexport default function ProfileScreen({ navigation }) {[m
+             </View>[m
+             <Text style={styles.menuArrow}>→</Text>[m
+           </TouchableOpacity>[m
+[31m-        </View>[m
+[32m+[m[32m        )}[m
+ [m
+[31m-        {/* Login Option for Non-Registered Users */}[m
+[31m-        {!userData?.isProfileCompleted && ([m
+[32m+[m[32m        {/* Login Option for Non-Authenticated Users */}[m
+[32m+[m[32m        {!isAuthenticated && ([m
+           <View style={styles.loginSection}>[m
+             <TouchableOpacity[m
+               style={styles.loginButton}[m

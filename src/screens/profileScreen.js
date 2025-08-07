@@ -482,6 +482,7 @@ export default function ProfileScreen({ navigation }) {
             </View>
             <Text style={styles.menuArrow}>→</Text>
           </TouchableOpacity>
+          </View>
         )}
 
         {/* Login Option for Non-Authenticated Users */}
@@ -498,8 +499,8 @@ export default function ProfileScreen({ navigation }) {
           </View>
         )}
 
-        {/* Admin Dashboard Button - Only show for admins */}
-        {isAdmin && (
+        {/* Admin Dashboard Button - Only show for admins when authenticated */}
+        {isAdmin && isAuthenticated && (
           <View style={styles.adminSection}>
             <Text style={styles.adminSectionTitle}>Admin Access</Text>
             <TouchableOpacity
