@@ -1,0 +1,62 @@
+{
+  "project_info": {
+    "project_number": "248939377913",
+    "project_id": "quponv",
+    "storage_bucket": "quponv.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:248939377913:android:f754b8dd103d37d7651e28",
+        "android_client_info": {
+          "package_name": "com.quponV"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "248939377913-1vualmbfo3ick2vv7mt5i6c454gfqb93.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.quponV",
+            "certificate_hash": "2abd5679fc81fba127d3065038646df5b1fd4548"
+          }
+        },
+        {
+          "client_id": "248939377913-8s6v0tq8tg5jibpcvlkc7vf32ioo4k9k.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.quponV",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
+          "client_id": "248939377913-109jru70oagq8lr5bgj3kniselm055jj.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDjYZ_9B8K-xaV_cjhLVnICtGpINvZykRI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "248939377913-109jru70oagq8lr5bgj3kniselm055jj.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "248939377913-jsebl9hvukvvddi2lpjsfbabgba7pm5u.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.quponV"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,4 +1,4 @@
-package com.quponv
+package com.quponV
 
 import android.app.Application
 import com.facebook.react.PackageList
@@ -9,6 +9,7 @@ import com.facebook.react.ReactNativeHost
 import com.facebook.react.ReactPackage
 import com.facebook.react.defaults.DefaultReactHost.getDefaultReactHost
 import com.facebook.react.defaults.DefaultReactNativeHost
+import com.google.firebase.FirebaseApp
 
 class MainApplication : Application(), ReactApplication {
 
@@ -24,8 +25,8 @@ class MainApplication : Application(), ReactApplication {
 
         override fun getUseDeveloperSupport(): Boolean = BuildConfig.DEBUG
 
-        override val isNewArchEnabled: Boolean = BuildConfig.IS_NEW_ARCHITECTURE_ENABLED
-        override val isHermesEnabled: Boolean = BuildConfig.IS_HERMES_ENABLED
+        override val isNewArchEnabled: Boolean = false
+        override val isHermesEnabled: Boolean = true
       }
 
   override val reactHost: ReactHost
@@ -33,6 +34,13 @@ class MainApplication : Application(), ReactApplication {
 
   override fun onCreate() {
     super.onCreate()
+    // Firebase initialization
+    try {
+      FirebaseApp.initializeApp(this)
+    } catch (e: Exception) {
+      // Firebase might already be initialized or there might be an issue
+      // Continue with app initialization
+    }
     loadReactNative(this)
   }
 }

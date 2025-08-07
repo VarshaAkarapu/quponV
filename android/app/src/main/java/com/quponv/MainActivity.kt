@@ -1,4 +1,4 @@
-package com.quponv
+package com.quponV
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate

@@ -1,28 +1,42 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
+import React, { useEffect, useState } from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { AuthProvider } from './src/contexts/AuthContext';
+import AppNavigator from './src/screens/appNavigator';
+import { initializeFirebase } from './src/utils/firebaseInit';
 
-import { NewAppScreen } from '@react-native/new-app-screen';
-import { StatusBar, StyleSheet, useColorScheme, View } from 'react-native';
+export default function App() {
+  const [firebaseReady, setFirebaseReady] = useState(false);
 
-function App() {
-  const isDarkMode = useColorScheme() === 'dark';
+  useEffect(() => {
+    const initFirebase = async () => {
+      try {
+        console.log('🔥 Initializing Firebase in App.tsx...');
+        await initializeFirebase();
+        console.log('🔥 Firebase initialized successfully in App.tsx');
+        setFirebaseReady(true);
+      } catch (error) {
+        console.error('🔥 Firebase initialization failed in App.tsx:', error);
+        // Still set ready to true so app can continue with fallback
+        setFirebaseReady(true);
+      }
+    };
+
+    initFirebase();
+  }, []);
+
+  if (!firebaseReady) {
+    // You could show a loading screen here
+    return null;
+  }
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <NewAppScreen templateFileName="App.tsx" />
-    </View>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <AuthProvider>
+        <NavigationContainer>
+          <AppNavigator />
+        </NavigationContainer>
+      </AuthProvider>
+    </GestureHandlerRootView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-});
-
-export default App;
