@@ -22,7 +22,7 @@ import { userAPI, couponAPI } from '../services/apiService';
 const { width, height } = Dimensions.get('window');
 
 export default function ProfileScreen({ navigation }) {
-  const { currentUser: authUser, isAdmin, userData: authUserData } = useAuth();
+  const { currentUser: authUser, isAdmin, userData: authUserData, signOut, isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState('uploaded');
   const [uploadedCoupons, setUploadedCoupons] = useState([]);
   const [purchasedCoupons, setPurchasedCoupons] = useState([]);
@@ -35,21 +35,23 @@ export default function ProfileScreen({ navigation }) {
   const [editLoading, setEditLoading] = useState(false);
 
   useEffect(() => {
-    if (authUserData) {
-      setUserData(authUserData);
-      setCurrentUser(authUser);
-    } else {
-      checkCurrentUser();
-      loadUserData();
+    if (isAuthenticated) {
+      if (authUserData) {
+        setUserData(authUserData);
+        setCurrentUser(authUser);
+      } else {
+        checkCurrentUser();
+        loadUserData();
+      }
+      loadPurchasedCoupons();
     }
-    loadPurchasedCoupons();
-  }, [authUserData, authUser]);
+  }, [authUserData, authUser, isAuthenticated]);
 
   useEffect(() => {
-    if (activeTab === 'uploaded') {
+    if (activeTab === 'uploaded' && isAuthenticated) {
       loadUploadedCoupons();
     }
-  }, [activeTab]);
+  }, [activeTab, isAuthenticated]);
 
   const checkCurrentUser = () => {
     const user = auth().currentUser;
@@ -232,9 +234,19 @@ export default function ProfileScreen({ navigation }) {
         style: 'destructive',
         onPress: async () => {
           try {
-            await auth().signOut();
+            await signOut();
+            Alert.alert('Success', 'You have been logged out successfully!', [
+              {
+                text: 'OK',
+                onPress: () => navigation.reset({
+                  index: 0,
+                  routes: [{ name: 'Home' }],
+                }),
+              },
+            ]);
           } catch (error) {
             console.error('Logout error:', error);
+            Alert.alert('Error', 'Failed to logout. Please try again.');
           }
         },
       },
@@ -331,7 +343,7 @@ export default function ProfileScreen({ navigation }) {
 
   const userLevel = calculateUserLevel();
 
-  if (loading) {
+  if (loading && isAuthenticated) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#B71C1C" />
@@ -349,18 +361,26 @@ export default function ProfileScreen({ navigation }) {
         </TouchableOpacity>
         <Text style={styles.title}>Profile</Text>
         <View style={styles.headerButtons}>
-          <TouchableOpacity
-            style={styles.refreshButton}
-            onPress={loadUserData}
-            disabled={loading}
-          >
-            <Text style={styles.refreshButtonText}>
-              {loading ? '⏳' : '🔄'}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={handleLogout}>
-            <Text style={styles.logoutText}>Logout</Text>
-          </TouchableOpacity>
+          {isAuthenticated && (
+            <TouchableOpacity
+              style={styles.refreshButton}
+              onPress={loadUserData}
+              disabled={loading}
+            >
+              <Text style={styles.refreshButtonText}>
+                {loading ? '⏳' : '🔄'}
+              </Text>
+            </TouchableOpacity>
+          )}
+          {isAuthenticated ? (
+            <TouchableOpacity onPress={handleLogout}>
+              <Text style={styles.logoutText}>Logout</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+              <Text style={styles.loginText}>Login</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
@@ -371,28 +391,46 @@ export default function ProfileScreen({ navigation }) {
         }
       >
         {/* User Status Section */}
-        <View style={styles.userStatusSection}>
-          <View style={styles.userAvatar}>
-            <Text style={styles.userInitial}>
-              {userData?.firstName?.charAt(0) || 'U'}
-            </Text>
+        {isAuthenticated ? (
+          <View style={styles.userStatusSection}>
+            <View style={styles.userAvatar}>
+              <Text style={styles.userInitial}>
+                {userData?.firstName?.charAt(0) || 'U'}
+              </Text>
+            </View>
+            <View style={styles.userInfo}>
+              <Text style={styles.userStatus}>
+                {userData?.isProfileCompleted ? 'Registered' : 'Not registered'}
+              </Text>
+              <Text style={styles.userPhone}>
+                {userData?.phoneNumber || 'No phone number'}
+              </Text>
+              <Text style={styles.userLevel}>
+                Level {userLevel.level} • {uploadedCoupons.length} coupons
+                uploaded
+              </Text>
+            </View>
           </View>
-          <View style={styles.userInfo}>
-            <Text style={styles.userStatus}>
-              {userData?.isProfileCompleted ? 'Registered' : 'Not registered'}
-            </Text>
-            <Text style={styles.userPhone}>
-              {userData?.phoneNumber || 'No phone number'}
-            </Text>
-            <Text style={styles.userLevel}>
-              Level {userLevel.level} • {uploadedCoupons.length} coupons
-              uploaded
-            </Text>
+        ) : (
+          <View style={styles.userStatusSection}>
+            <View style={styles.userAvatar}>
+              <Text style={styles.userInitial}>👤</Text>
+            </View>
+            <View style={styles.userInfo}>
+              <Text style={styles.userStatus}>Not Logged In</Text>
+              <Text style={styles.userPhone}>
+                Please login to access your profile
+              </Text>
+              <Text style={styles.userLevel}>
+                Login to upload coupons and track your progress
+              </Text>
+            </View>
           </View>
-        </View>
+        )}
 
-        {/* Menu Items */}
-        <View style={styles.menuSection}>
+        {/* Menu Items - Only show when authenticated */}
+        {isAuthenticated && (
+          <View style={styles.menuSection}>
           <TouchableOpacity
             style={styles.menuItem}
             onPress={() => navigation.navigate('UserInformation')}
@@ -444,10 +482,10 @@ export default function ProfileScreen({ navigation }) {
             </View>
             <Text style={styles.menuArrow}>→</Text>
           </TouchableOpacity>
-        </View>
+        )}
 
-        {/* Login Option for Non-Registered Users */}
-        {!userData?.isProfileCompleted && (
+        {/* Login Option for Non-Authenticated Users */}
+        {!isAuthenticated && (
           <View style={styles.loginSection}>
             <TouchableOpacity
               style={styles.loginButton}
