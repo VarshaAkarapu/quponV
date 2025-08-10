@@ -9,7 +9,17 @@ const AuthContext = createContext();
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    console.error('useAuth must be used within an AuthProvider');
+    // Return fallback values instead of throwing
+    return {
+      currentUser: null,
+      isAdmin: false,
+      userData: null,
+      signOut: () => {},
+      isAuthenticated: false,
+      loading: false,
+      restoreAdminStatus: async () => {},
+    };
   }
   return context;
 };
@@ -154,14 +164,13 @@ export const AuthProvider = ({ children }) => {
   const checkUserExists = async phoneNumber => {
     try {
       const response = await fetch(
-        `https://m8igs45g3a.execute-api.ap-south-1.amazonaws.com/dev/api/users/phone?phone=${encodeURIComponent(
-          phoneNumber,
-        )}`,
+        'https://m8igs45g3a.execute-api.ap-south-1.amazonaws.com/dev/api/users/phone',
         {
-          method: 'GET',
+          method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
+          body: JSON.stringify({ phone: phoneNumber }),
         },
       );
 

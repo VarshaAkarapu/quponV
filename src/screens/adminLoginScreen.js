@@ -41,17 +41,17 @@ export default function AdminLoginScreen({ navigation }) {
     try {
       console.log('🔐 Starting admin status check for phone:', phone);
 
-      // Use GET method with query parameter instead of POST
-      const apiUrl = `https://m8igs45g3a.execute-api.ap-south-1.amazonaws.com/dev/api/users/phone?phone=${encodeURIComponent(
-        phone,
-      )}`;
+      // Use POST method with phone in body
+      const apiUrl =
+        'https://m8igs45g3a.execute-api.ap-south-1.amazonaws.com/dev/api/users/phone';
       console.log('🔐 API URL:', apiUrl);
 
       const response = await fetch(apiUrl, {
-        method: 'GET',
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify({ phone }),
       });
 
       console.log('🔐 Response status:', response.status);

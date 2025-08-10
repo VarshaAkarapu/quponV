@@ -36,21 +36,16 @@ export default function AdminDashboard({ navigation }) {
   const [localStatusChanges, setLocalStatusChanges] = useState({});
   const [refreshInterval, setRefreshInterval] = useState(null);
 
-  console.log('🏠 AdminDashboard component rendered');
-
   useEffect(() => {
-    console.log('🏠 AdminDashboard initial useEffect');
     // Initial data loading is now handled by the auth check useEffect
   }, []);
 
   // Add focus listener to reload data when returning to screen
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', async () => {
-      console.log('AdminDashboard screen focused - reloading data');
       if (currentUser) {
         // Always check admin status when screen is focused
         const adminStatus = await checkAdminStatus();
-        console.log('🔍 Admin status check on focus:', adminStatus);
 
         if (adminStatus) {
           await loadLocalStatusChanges();
@@ -64,15 +59,9 @@ export default function AdminDashboard({ navigation }) {
 
   // Check admin authentication on component mount
   useEffect(() => {
-    console.log('🔍 AdminDashboard auth check:', {
-      currentUser: !!currentUser,
-      isAdmin,
-      userPhone: currentUser?.phoneNumber,
-    });
-
     if (!currentUser) {
       // Not authenticated, redirect to home
-      console.log('❌ No current user - redirecting to Home');
+
       Alert.alert('Access Denied', 'Please login to access admin features.', [
         {
           text: 'Go to Admin Login',
@@ -92,20 +81,17 @@ export default function AdminDashboard({ navigation }) {
 
     if (!isAdmin) {
       // User is logged in but not admin, try to refresh admin status
-      console.log('⚠️ User logged in but not admin, checking admin status...');
+
       checkAdminStatus().then(adminStatus => {
         if (adminStatus) {
-          console.log('✅ Admin status refreshed successfully');
           // Admin status will be updated in AuthContext, which will trigger this useEffect again
         } else {
           // Try to restore admin status from stored data
-          console.log('🔄 Trying to restore admin status from stored data...');
+
           restoreAdminStatus().then(restored => {
             if (restored) {
-              console.log('✅ Admin status restored from stored data');
               // Admin status will be updated in AuthContext
             } else {
-              console.log('❌ User is not admin - redirecting to Home');
               Alert.alert(
                 'Access Denied',
                 'Admin access required. Please use the admin login to access this section.',
@@ -129,8 +115,6 @@ export default function AdminDashboard({ navigation }) {
         }
       });
     } else {
-      console.log('✅ Admin access granted - loading data');
-      console.log('✅ About to call loadLocalStatusChanges and fetchStats');
       // Admin is authenticated, proceed with loading data
       loadLocalStatusChanges();
       fetchStats();
@@ -142,7 +126,6 @@ export default function AdminDashboard({ navigation }) {
     if (isAdmin && currentUser) {
       // Start real-time refresh every 30 seconds
       const interval = setInterval(() => {
-        console.log('🔄 Auto-refreshing dashboard stats...');
         loadLocalStatusChanges();
         fetchStats(false); // Don't show updating indicator for auto-refresh
       }, 30000); // 30 seconds
@@ -182,7 +165,6 @@ export default function AdminDashboard({ navigation }) {
   };
 
   const fetchStats = async (showUpdating = true) => {
-    console.log('📊 Starting fetchStats');
     if (showUpdating) {
       setIsUpdating(true);
     }
@@ -190,44 +172,27 @@ export default function AdminDashboard({ navigation }) {
     // Optional network connectivity tests - don't block API calls if they fail
     let networkTestsPassed = true;
     try {
-      console.log('📊 Testing network connectivity (optional)...');
-
       // Test 1: Basic internet connectivity
-      console.log('📊 Testing basic internet connectivity...');
+
       const basicTest = await fetch('https://www.google.com', {
         method: 'GET',
       });
-      console.log('📊 Basic internet test:', {
-        status: basicTest.status,
-        ok: basicTest.ok,
-      });
 
       // Test 2: API base connectivity
-      console.log('📊 Testing API base connectivity...');
+
       const apiBaseTest = await fetch(
         'https://m8igs45g3a.execute-api.ap-south-1.amazonaws.com/dev/api',
         {
           method: 'GET',
         },
       );
-      console.log('📊 API base test:', {
-        status: apiBaseTest.status,
-        ok: apiBaseTest.ok,
-      });
-
-      console.log('📊 Network tests completed successfully!');
     } catch (connectivityError) {
-      console.log(
-        '📊 Network connectivity test failed (continuing anyway):',
-        connectivityError.message,
-      );
       networkTestsPassed = false;
       // Don't block the API calls - just log the issue
     }
 
     // Proceed with API calls regardless of network test results
     try {
-      console.log('📊 Making API calls...');
       const [usersResponse, couponsResponse] = await Promise.all([
         fetch(
           'https://m8igs45g3a.execute-api.ap-south-1.amazonaws.com/dev/api/users',
@@ -236,13 +201,6 @@ export default function AdminDashboard({ navigation }) {
           'https://m8igs45g3a.execute-api.ap-south-1.amazonaws.com/dev/api/coupons',
         ),
       ]);
-
-      console.log('📊 API Response Status:', {
-        usersStatus: usersResponse.status,
-        usersOk: usersResponse.ok,
-        couponsStatus: couponsResponse.status,
-        couponsOk: couponsResponse.ok,
-      });
 
       // Check if responses are successful
       if (!usersResponse.ok) {
@@ -285,21 +243,9 @@ export default function AdminDashboard({ navigation }) {
       const usersData = await usersResponse.json();
       const couponsData = await couponsResponse.json();
 
-      console.log('📊 API responses received:', {
-        usersData: usersData.success ? 'success' : 'failed',
-        couponsData: couponsData.success ? 'success' : 'failed',
-        usersDataKeys: Object.keys(usersData),
-        couponsDataKeys: Object.keys(couponsData),
-      });
-
       // Handle different API response structures
       const users = usersData.success ? usersData.users : usersData;
       const coupons = couponsData.success ? couponsData.coupons : couponsData;
-
-      console.log('📊 Processed data:', {
-        usersCount: users.length,
-        couponsCount: coupons.length,
-      });
 
       // Merge local status changes with fetched data
       const mergedCoupons = coupons.map(coupon => ({
@@ -319,14 +265,6 @@ export default function AdminDashboard({ navigation }) {
         c => c.status === 'rejected',
       ).length;
 
-      console.log('📊 Setting stats:', {
-        totalUsers: users.length,
-        totalCoupons: coupons.length,
-        pendingCoupons,
-        approvedCoupons,
-        rejectedCoupons,
-      });
-
       setStats({
         totalUsers: users.length,
         totalCoupons: coupons.length,
@@ -342,12 +280,7 @@ export default function AdminDashboard({ navigation }) {
 
       // Show warning if network tests failed but API calls succeeded
       if (!networkTestsPassed) {
-        console.log(
-          '⚠️ Network tests failed but API calls succeeded - this is normal',
-        );
       }
-
-      console.log('📊 Dashboard data loaded successfully!');
     } catch (error) {
       console.error('📊 Error fetching stats:', error);
 
@@ -441,7 +374,6 @@ export default function AdminDashboard({ navigation }) {
   );
 
   if (loading) {
-    console.log('🏠 AdminDashboard: Showing loading screen');
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#B71C1C" />
@@ -450,7 +382,6 @@ export default function AdminDashboard({ navigation }) {
     );
   }
 
-  console.log('🏠 AdminDashboard: Rendering main dashboard content');
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -479,7 +410,6 @@ export default function AdminDashboard({ navigation }) {
               isUpdating && styles.refreshButtonUpdating,
             ]}
             onPress={() => {
-              console.log('🔄 Manual refresh triggered');
               loadLocalStatusChanges();
               fetchStats();
             }}

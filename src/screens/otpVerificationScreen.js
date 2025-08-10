@@ -15,6 +15,7 @@ import {
   Modal,
 } from 'react-native';
 import auth from '@react-native-firebase/auth';
+import { buildApiUrl, API_ENDPOINTS } from '../config/apiConfig';
 import { getConfirmationResult, setConfirmationResult } from './authStore';
 import { useNavigation, useRoute } from '@react-navigation/native';
 
@@ -116,33 +117,18 @@ export default function OtpScreen() {
       }
 
       const credential = await confirmation.confirm(otpString);
+      // Get Firebase ID token to authenticate with backend
       const idToken = await credential.user.getIdToken();
 
       console.log('🔐 OTP verified successfully, making API call...');
       console.log('🔐 Phone number from route params:', route.params.phone);
 
-      // Use the correct API endpoint from apiConfig
-      const phoneNumber = route.params.phone;
-
-      const res = await fetch(
-        `https://m8igs45g3a.execute-api.ap-south-1.amazonaws.com/dev/api/users/phone?idToken=${encodeURIComponent(
-          idToken,
-        )}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        },
-      );
-
-      console.log(
-        '🔐 Request URL with idToken:',
-        `https://m8igs45g3a.execute-api.ap-south-1.amazonaws.com/dev/api/users/phone?idToken=${idToken.substring(
-          0,
-          20,
-        )}...`,
-      );
+      // Call backend to create/fetch user using Firebase idToken (GET /users/phone?idToken=...)
+      const url = `${buildApiUrl(
+        API_ENDPOINTS.USERS.LOGIN,
+      )}?idToken=${encodeURIComponent(idToken)}`;
+      const res = await fetch(url, { method: 'GET' });
+      console.log('🔐 Request URL:', url);
 
       console.log('🔐 API response status:', res.status);
 
@@ -155,24 +141,14 @@ export default function OtpScreen() {
         console.log('🔐 Parsed response data:', data);
       } catch (jsonError) {
         console.error('Server returned non-JSON:', responseText);
-        console.error('JSON parse error:', jsonError);
-
-        // If the API fails, create a mock user session for testing
-        console.log('🔐 Creating fallback user session for testing...');
-        const mockUserData = {
-          user: {
-            userId: 'test-user-' + Date.now(),
-            isProfileCompleted: false,
-            isAdmin: false,
-            phone: phoneNumber,
-          },
-        };
-        data = mockUserData;
-        console.log('🔐 Using mock data:', data);
+        throw new Error('Unexpected server response');
       }
 
-      if (res.ok && data.user) {
-        const { isProfileCompleted, userId, isAdmin } = data.user;
+      if (res.ok && (data.user || data.userId)) {
+        const userObj = data.user || {};
+        const isProfileCompleted = userObj.isProfileCompleted === true;
+        const userId = userObj.userId || data.userId;
+        const isAdmin = userObj.role === 'admin' || userObj.isAdmin === true;
 
         console.log('🔐 User data received:', {
           isProfileCompleted,

@@ -79,9 +79,7 @@ export default function AdminUploadCoupon({ navigation }) {
       if (adminData) {
         const admin = JSON.parse(adminData);
         setAdminUser(admin);
-        console.log('Admin data loaded:', admin);
       } else {
-        console.log('No admin data found in AsyncStorage');
         setAlert({
           visible: true,
           message: 'Admin session not found. Please login again.',
@@ -148,7 +146,6 @@ export default function AdminUploadCoupon({ navigation }) {
       );
       if (response.ok) {
         const data = await response.json();
-        console.log('Brands API response count:', data?.length || 0);
         // Filter out the flights brand from the brands list
         const filteredData = (data || []).filter(
           brand =>
@@ -172,7 +169,6 @@ export default function AdminUploadCoupon({ navigation }) {
       );
       if (response.ok) {
         const data = await response.json();
-        console.log('Categories API response count:', data?.length || 0);
         setCategories(data || []);
         setFilteredCategories(data || []);
       } else {
@@ -227,15 +223,6 @@ export default function AdminUploadCoupon({ navigation }) {
           }
 
           // Log image info for debugging
-          if (__DEV__) {
-            console.log('Admin image selected:', {
-              uri: processedImage.uri,
-              fileSize: formatFileSize(processedImage.fileSize),
-              width: processedImage.width,
-              height: processedImage.height,
-              type: processedImage.type,
-            });
-          }
         } catch (validationError) {
           setAlert({
             visible: true,
@@ -343,9 +330,6 @@ export default function AdminUploadCoupon({ navigation }) {
       let headers;
       let formDataToSend = null;
 
-      console.log('Debug: formData.screenshot exists:', !!formData.screenshot);
-      console.log('Debug: formData.screenshot value:', formData.screenshot);
-
       // Validate that all required fields are present (matching backend requirements)
       const requiredFields = [
         'userId',
@@ -408,15 +392,7 @@ export default function AdminUploadCoupon({ navigation }) {
           headers = {
             'Content-Type': 'application/json',
           };
-          console.log('Falling back to JSON format due to FormData error');
         }
-
-        console.log('Debug: FormData created successfully:', !!formDataToSend);
-        console.log('Debug: FormData type:', typeof formDataToSend);
-        console.log(
-          'Debug: FormData has entries method:',
-          typeof formDataToSend.entries === 'function',
-        );
 
         // Only set FormData request body if FormData was created successfully
         if (formDataToSend) {
@@ -435,37 +411,17 @@ export default function AdminUploadCoupon({ navigation }) {
         };
       }
 
-      console.log('Sending payload:', payload); // Debug log
-      console.log('Request headers:', headers); // Debug log
-      console.log('Final request body:', requestBody);
-      console.log(
-        'FormData screenshot info:',
-        formData.screenshot
-          ? {
-              uri: formData.screenshot.uri,
-              type: formData.screenshot.type,
-              name: formData.screenshot.name,
-              size: formData.screenshot.fileSize || 'unknown',
-            }
-          : 'No screenshot',
-      );
-
       // Debug FormData contents only if screenshot exists and FormData is properly initialized
       if (
         formData.screenshot &&
         formDataToSend &&
         typeof formDataToSend.entries === 'function'
       ) {
-        console.log('FormData contents:');
         try {
           for (let [key, value] of formDataToSend.entries()) {
-            console.log(`${key}:`, value);
           }
-        } catch (entriesError) {
-          console.log('Error iterating FormData entries:', entriesError);
-        }
+        } catch (entriesError) {}
       } else if (formData.screenshot) {
-        console.log('FormData not properly initialized for screenshot');
       }
 
       const response = await fetch(
@@ -478,24 +434,9 @@ export default function AdminUploadCoupon({ navigation }) {
       );
 
       const data = await response.json();
-      console.log('Admin upload response keys:', Object.keys(data || {}));
-      console.log('Admin upload response status:', response.status);
-      console.log('Admin upload response URL:', response.url);
-      console.log('Admin upload response data:', data);
-      console.log('Admin upload response headers:', response.headers);
 
       // Log the actual request details for debugging
-      console.log('Request method:', 'POST');
-      console.log(
-        'Request URL:',
-        'https://m8igs45g3a.execute-api.ap-south-1.amazonaws.com/dev/api/coupons',
-      );
-      console.log('Request headers:', headers);
-      console.log('Request body type:', typeof requestBody);
-      console.log(
-        'Request body length:',
-        requestBody ? requestBody.length || 'N/A' : 'N/A',
-      );
+
       if (response.ok) {
         setAlert({
           visible: true,

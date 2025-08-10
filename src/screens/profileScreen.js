@@ -22,7 +22,28 @@ import { userAPI, couponAPI } from '../services/apiService';
 const { width, height } = Dimensions.get('window');
 
 export default function ProfileScreen({ navigation }) {
-  const { currentUser: authUser, isAdmin, userData: authUserData, signOut, isAuthenticated } = useAuth();
+  let authContext;
+  try {
+    authContext = useAuth();
+  } catch (error) {
+    console.error('Error accessing AuthContext:', error);
+    // Provide fallback values
+    authContext = {
+      currentUser: null,
+      isAdmin: false,
+      userData: null,
+      signOut: () => {},
+      isAuthenticated: false,
+    };
+  }
+
+  const {
+    currentUser: authUser,
+    isAdmin,
+    userData: authUserData,
+    signOut,
+    isAuthenticated,
+  } = authContext;
   const [activeTab, setActiveTab] = useState('uploaded');
   const [uploadedCoupons, setUploadedCoupons] = useState([]);
   const [purchasedCoupons, setPurchasedCoupons] = useState([]);
@@ -79,14 +100,12 @@ export default function ProfileScreen({ navigation }) {
           // First try to get user data from backend
           console.log('🔍 Fetching user data from backend for phone:', phone);
 
-          const idToken = await user.getIdToken();
           const response = await fetch(
             'https://m8igs45g3a.execute-api.ap-south-1.amazonaws.com/dev/api/users/phone',
             {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
-                Authorization: `Bearer ${idToken}`,
               },
               body: JSON.stringify({ phone }),
             },
@@ -238,10 +257,11 @@ export default function ProfileScreen({ navigation }) {
             Alert.alert('Success', 'You have been logged out successfully!', [
               {
                 text: 'OK',
-                onPress: () => navigation.reset({
-                  index: 0,
-                  routes: [{ name: 'Home' }],
-                }),
+                onPress: () =>
+                  navigation.reset({
+                    index: 0,
+                    routes: [{ name: 'Home' }],
+                  }),
               },
             ]);
           } catch (error) {
@@ -431,57 +451,59 @@ export default function ProfileScreen({ navigation }) {
         {/* Menu Items - Only show when authenticated */}
         {isAuthenticated && (
           <View style={styles.menuSection}>
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() => navigation.navigate('UserInformation')}
-          >
-            <View style={styles.menuItemContent}>
-              <Text style={styles.menuItemTitle}>Your Information</Text>
-              <Text style={styles.menuItemSubtitle}>
-                {userData?.isProfileCompleted ? 'Registered' : 'Not registered'}
-              </Text>
-            </View>
-            <Text style={styles.menuArrow}>→</Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => navigation.navigate('UserInformation')}
+            >
+              <View style={styles.menuItemContent}>
+                <Text style={styles.menuItemTitle}>Your Information</Text>
+                <Text style={styles.menuItemSubtitle}>
+                  {userData?.isProfileCompleted
+                    ? 'Registered'
+                    : 'Not registered'}
+                </Text>
+              </View>
+              <Text style={styles.menuArrow}>→</Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() => navigation.navigate('UploadedCoupons')}
-          >
-            <View style={styles.menuItemContent}>
-              <Text style={styles.menuItemTitle}>Coupons Uploaded</Text>
-              <Text style={styles.menuItemSubtitle}>
-                {uploadedCoupons.length} coupons
-              </Text>
-            </View>
-            <Text style={styles.menuArrow}>→</Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => navigation.navigate('UploadedCoupons')}
+            >
+              <View style={styles.menuItemContent}>
+                <Text style={styles.menuItemTitle}>Coupons Uploaded</Text>
+                <Text style={styles.menuItemSubtitle}>
+                  {uploadedCoupons.length} coupons
+                </Text>
+              </View>
+              <Text style={styles.menuArrow}>→</Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() => navigation.navigate('PurchasedCoupons')}
-          >
-            <View style={styles.menuItemContent}>
-              <Text style={styles.menuItemTitle}>Coupons Purchased</Text>
-              <Text style={styles.menuItemSubtitle}>
-                {purchasedCoupons.length} coupons
-              </Text>
-            </View>
-            <Text style={styles.menuArrow}>→</Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => navigation.navigate('PurchasedCoupons')}
+            >
+              <View style={styles.menuItemContent}>
+                <Text style={styles.menuItemTitle}>Coupons Purchased</Text>
+                <Text style={styles.menuItemSubtitle}>
+                  {purchasedCoupons.length} coupons
+                </Text>
+              </View>
+              <Text style={styles.menuArrow}>→</Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() => navigation.navigate('UserLevel')}
-          >
-            <View style={styles.menuItemContent}>
-              <Text style={styles.menuItemTitle}>User Level</Text>
-              <Text style={styles.menuItemSubtitle}>
-                Level {userLevel.level}
-              </Text>
-            </View>
-            <Text style={styles.menuArrow}>→</Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => navigation.navigate('UserLevel')}
+            >
+              <View style={styles.menuItemContent}>
+                <Text style={styles.menuItemTitle}>User Level</Text>
+                <Text style={styles.menuItemSubtitle}>
+                  Level {userLevel.level}
+                </Text>
+              </View>
+              <Text style={styles.menuArrow}>→</Text>
+            </TouchableOpacity>
           </View>
         )}
 
@@ -499,8 +521,8 @@ export default function ProfileScreen({ navigation }) {
           </View>
         )}
 
-        {/* Admin Dashboard Button - Only show for admins when authenticated */}
-        {isAdmin && isAuthenticated && (
+        {/* Admin Dashboard Button - Only show for admins */}
+        {isAdmin && (
           <View style={styles.adminSection}>
             <Text style={styles.adminSectionTitle}>Admin Access</Text>
             <TouchableOpacity

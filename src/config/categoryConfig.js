@@ -32,10 +32,10 @@ export const API_CATEGORIES = [
 export const getCategoryIcon = categoryName => {
   const iconMap = {
     // Fashion & Apparel
-    Fashion: require('../assets/fashion.png'),
-    'Fashion & Apparel': require('../assets/fashion.png'),
-    Clothing: require('../assets/fashion.png'),
-    Accessories: require('../assets/fashion.png'),
+    Fashion: require('../assets/Fashion.jpeg'),
+    'Fashion & Apparel': require('../assets/Fashion.jpeg'),
+    Clothing: require('../assets/Fashion.jpeg'),
+    Accessories: require('../assets/Fashion.jpeg'),
 
     // Beauty & Health
     'Beauty & Health': require('../assets/Beauty_and_health.jpeg'),
@@ -46,17 +46,17 @@ export const getCategoryIcon = categoryName => {
     Makeup: require('../assets/Beauty_and_health.jpeg'),
 
     // Food & Dining
-    'Food & Dining': require('../assets/food.png'),
-    Food: require('../assets/food.png'),
-    Restaurants: require('../assets/food.png'),
-    Dining: require('../assets/food.png'),
-    Beverages: require('../assets/food.png'),
+    'Food & Dining': require('../assets/logo.png'),
+    Food: require('../assets/logo.png'),
+    Restaurants: require('../assets/logo.png'),
+    Dining: require('../assets/logo.png'),
+    Beverages: require('../assets/logo.png'),
 
     // Travel
-    Travel: require('../assets/travel.png'),
-    'Travel & Tourism': require('../assets/travel.png'),
-    Hotels: require('../assets/travel.png'),
-    Vacation: require('../assets/travel.png'),
+    Travel: require('../assets/Travel.jpeg'),
+    'Travel & Tourism': require('../assets/Travel.jpeg'),
+    Hotels: require('../assets/Travel.jpeg'),
+    Vacation: require('../assets/Travel.jpeg'),
 
     // Entertainment
     Entertainment: require('../assets/Entertainment.jpeg'),
@@ -65,12 +65,12 @@ export const getCategoryIcon = categoryName => {
     Gaming: require('../assets/Computers_laptops_Gaming.jpeg'),
     Events: require('../assets/Entertainment.jpeg'),
 
-    // Electronics
-    Electronics: require('../assets/electronics.png'),
-    Gadgets: require('../assets/electronics.png'),
+    // Electronics - Use a default image since electronics.png doesn't exist
+    Electronics: require('../assets/logo.png'),
+    Gadgets: require('../assets/logo.png'),
     Smartphones: require('../assets/Mobiles.jpeg'),
     Laptops: require('../assets/Computers_laptops_Gaming.jpeg'),
-    Cameras: require('../assets/electronics.png'),
+    Cameras: require('../assets/logo.png'),
 
     // Appliances
     Appliances: require('../assets/Appliances.jpeg'),
@@ -100,24 +100,24 @@ export const getCategoryIcon = categoryName => {
     'Audio & Video': require('../assets/Tv.jpeg'),
     'Audio Video': require('../assets/Tv.jpeg'),
 
-    // Sports
-    Sports: require('../assets/sports.png'),
-    Fitness: require('../assets/sports.png'),
-    Outdoor: require('../assets/sports.png'),
-    Exercise: require('../assets/sports.png'),
+    // Sports - Use a default image since sports.png doesn't exist
+    Sports: require('../assets/logo.png'),
+    Fitness: require('../assets/logo.png'),
+    Outdoor: require('../assets/logo.png'),
+    Exercise: require('../assets/logo.png'),
 
-    // Additional categories
-    Books: require('../assets/tech.png'),
-    Education: require('../assets/tech.png'),
-    Automotive: require('../assets/electronics.png'),
+    // Additional categories - Use default images for missing ones
+    Books: require('../assets/logo.png'),
+    Education: require('../assets/logo.png'),
+    Automotive: require('../assets/logo.png'),
     Pets: require('../assets/HomeDecor.jpeg'),
     'Baby & Kids': require('../assets/HomeDecor.jpeg'),
-    Office: require('../assets/tech.png'),
-    Business: require('../assets/tech.png'),
-    Finance: require('../assets/money.png'),
-    Insurance: require('../assets/money.png'),
+    Office: require('../assets/logo.png'),
+    Business: require('../assets/logo.png'),
+    Finance: require('../assets/logo.png'),
+    Insurance: require('../assets/logo.png'),
     'Real Estate': require('../assets/HomeDecor.jpeg'),
-    Services: require('../assets/tech.png'),
+    Services: require('../assets/logo.png'),
   };
 
   // Try exact match first
@@ -140,7 +140,7 @@ export const getCategoryIcon = categoryName => {
   }
 
   // Return default icon if no match found
-  return require('../assets/fashion.png');
+  return require('../assets/logo.png');
 };
 
 // Category grouping for display purposes

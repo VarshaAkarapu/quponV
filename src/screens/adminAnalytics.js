@@ -32,7 +32,6 @@ export default function AdminAnalytics({ navigation }) {
   // Add focus listener to reload data when returning to screen
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', async () => {
-      console.log('AdminAnalytics screen focused - reloading data');
       await loadLocalStatusChanges();
       fetchAnalytics();
     });
@@ -80,8 +79,8 @@ export default function AdminAnalytics({ navigation }) {
       );
       const brandsData = await brandsResponse.json();
       // Filter out the flights brand from the brands list
-      const brands = brandsData.filter(brand => 
-        brand.brandName && brand.brandName.toLowerCase() !== 'flights'
+      const brands = brandsData.filter(
+        brand => brand.brandName && brand.brandName.toLowerCase() !== 'flights',
       );
 
       // Merge local status changes with fetched data

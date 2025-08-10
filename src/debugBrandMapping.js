@@ -3,7 +3,7 @@ import { getBrandLogo, hasBrandLogo } from './config/brandConfig';
 // Test with the actual brand names from the console logs
 const testBrandNames = [
   'Puma',
-  'Nike', 
+  'Nike',
   'Lenskart',
   'Giva',
   'Adidas',
@@ -92,22 +92,10 @@ const testBrandNames = [
   'Missoma',
   'Farfetched',
   'Jiosaavn',
-  'Hotels.com'
+  'Hotels.com',
 ];
-
-console.log('🧪 Testing brand mapping with actual brand names from logs...');
-console.log('='.repeat(60));
 
 testBrandNames.forEach(brandName => {
   const logo = getBrandLogo(brandName);
   const hasLogo = hasBrandLogo(brandName);
-  
-  console.log(`Brand: "${brandName}"`);
-  console.log(`  Has Logo: ${hasLogo}`);
-  console.log(`  Logo Source: ${logo}`);
-  console.log(`  Logo Type: ${typeof logo}`);
-  console.log('---');
 });
-
-console.log('='.repeat(60));
-console.log('�� Test completed!'); 

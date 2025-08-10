@@ -80,7 +80,7 @@ const styles = StyleSheet.create({
   logo: {
     width: 120,
     height: 120,
-    marginBottom: 24,
+    marginBottom: 12,
     shadowColor: '#B71C1C',
     shadowOffset: {
       width: 0,

@@ -23,25 +23,27 @@ export default function ImageProcessingTest() {
       id: 'test1',
       name: 'Large JPEG (460KB)',
       // Simulate a large base64 string (this is just a placeholder)
-      data: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k='.repeat(1000), // This creates a large string
+      data: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k='.repeat(
+        1000,
+      ), // This creates a large string
     },
     {
       id: 'test2',
       name: 'Large PNG (394KB)',
-      data: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='.repeat(1000), // This creates a large string
+      data: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='.repeat(
+        1000,
+      ), // This creates a large string
     },
   ];
 
-  const runTest = (testImage) => {
-    console.log(`🧪 Testing image processing for: ${testImage.name}`);
-    
+  const runTest = testImage => {
     try {
       // Test the old approach (would return null for large images)
       const oldResult = processImageData(testImage.data, testImage.id);
-      
+
       // Test the new approach
       const newResult = processImageData(testImage.data, testImage.id);
-      
+
       const result = {
         id: testImage.id,
         name: testImage.name,
@@ -51,14 +53,11 @@ export default function ImageProcessingTest() {
         processedSize: newResult ? Math.round(newResult.length / 1024) : 'N/A',
         timestamp: new Date().toLocaleTimeString(),
       };
-      
+
       setTestResults(prev => [result, ...prev]);
-      
-      console.log(`✅ Test completed for ${testImage.name}:`, result);
-      
     } catch (error) {
       console.error(`❌ Test failed for ${testImage.name}:`, error);
-      
+
       const result = {
         id: testImage.id,
         name: testImage.name,
@@ -69,13 +68,12 @@ export default function ImageProcessingTest() {
         error: error.message,
         timestamp: new Date().toLocaleTimeString(),
       };
-      
+
       setTestResults(prev => [result, ...prev]);
     }
   };
 
   const runAllTests = () => {
-    console.log('🧪 Running all image processing tests...');
     testImages.forEach(testImage => {
       setTimeout(() => runTest(testImage), 100); // Small delay between tests
     });
@@ -91,12 +89,12 @@ export default function ImageProcessingTest() {
       <Text style={styles.subtitle}>
         Testing improved image processing for large user-uploaded screenshots
       </Text>
-      
+
       <View style={styles.buttonContainer}>
         <TouchableOpacity style={styles.button} onPress={runAllTests}>
           <Text style={styles.buttonText}>Run All Tests</Text>
         </TouchableOpacity>
-        
+
         <TouchableOpacity style={styles.clearButton} onPress={clearResults}>
           <Text style={styles.clearButtonText}>Clear Results</Text>
         </TouchableOpacity>
@@ -104,7 +102,7 @@ export default function ImageProcessingTest() {
 
       <View style={styles.resultsContainer}>
         <Text style={styles.resultsTitle}>Test Results:</Text>
-        
+
         {testResults.map((result, index) => (
           <View key={`${result.id}-${index}`} style={styles.resultItem}>
             <Text style={styles.resultName}>{result.name}</Text>
@@ -128,9 +126,11 @@ export default function ImageProcessingTest() {
             <Text style={styles.timestamp}>{result.timestamp}</Text>
           </View>
         ))}
-        
+
         {testResults.length === 0 && (
-          <Text style={styles.noResults}>No test results yet. Run tests to see results.</Text>
+          <Text style={styles.noResults}>
+            No test results yet. Run tests to see results.
+          </Text>
         )}
       </View>
     </ScrollView>
@@ -227,4 +227,4 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     paddingVertical: 20,
   },
-}); 
+});

@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, Alert } from 'react-native';
+import { View, Text, StyleSheet, Alert, Image } from 'react-native';
 import RazorpayCheckout from 'react-native-razorpay';
 
 export default function PaymentScreen({ route, navigation }) {
@@ -11,12 +11,16 @@ export default function PaymentScreen({ route, navigation }) {
       navigation.goBack();
       return;
     }
-
+g
     // Add a small delay to show the white background before opening Razorpay
     const timer = setTimeout(() => {
+      // Resolve local logo asset to a URI usable by Razorpay
+      const logoUri = Image.resolveAssetSource(
+        require('../assets/logo.png'),
+      ).uri;
       const options = {
         description: `${coupon.brandName || 'Coupon'} Purchase`,
-        image: './assets/logo.png',
+        // image: logoUri, // Razorpay expects a URI (local resolved or remote URL)
         currency: 'INR',
         key: 'rzp_test_D8xoDNEFQq0XCM',
         amount: coupon.price * 100,

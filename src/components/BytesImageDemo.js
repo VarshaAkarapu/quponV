@@ -67,22 +67,14 @@ const BytesImageDemo = () => {
     setLoading(true);
 
     try {
-      console.log('🔄 Starting byte array to image conversion...');
-
       // Step 1: Convert byte array to base64 string
       const base64String = bytesToBase64(sampleBytes);
-      console.log(
-        '✅ Base64 conversion successful, length:',
-        base64String.length,
-      );
 
       // Step 2: Detect image format from bytes
       const imageFormat = detectImageFormat(sampleBytes);
-      console.log('📷 Detected image format:', imageFormat);
 
       // Step 3: Create data URL (data:image/jpeg;base64,...)
       const dataUrl = `data:${imageFormat};base64,${base64String}`;
-      console.log('🔗 Created data URL, length:', dataUrl.length);
 
       // Step 4: Set as image source
       setImageUri(dataUrl);
@@ -106,8 +98,6 @@ const BytesImageDemo = () => {
     setLoading(true);
 
     try {
-      console.log('🔄 Using processImageData function...');
-
       // Use the existing processImageData function
       const result = processImageData(sampleBytes, 'DEMO_COUPON');
 
@@ -166,7 +156,7 @@ const BytesImageDemo = () => {
             source={{ uri: imageUri }}
             style={styles.image}
             resizeMode="contain"
-            onLoad={() => console.log('✅ Image loaded successfully')}
+            onLoad={() => {}}
             onError={error => console.error('❌ Image load error:', error)}
           />
           <Text style={styles.imageInfo}>

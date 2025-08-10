@@ -1163,47 +1163,10 @@ export default function AdminCouponManagement({ navigation }) {
                     {/* Debug: Log the image data */}
                     {selectedCoupon &&
                       (() => {
-                        console.log('=== IMAGE DEBUG START ===');
-                        console.log('Coupon ID:', selectedCoupon.couponId);
-                        console.log(
-                          'Raw termsAndConditionImage:',
-                          selectedCoupon.termsAndConditionImage,
-                        );
-                        console.log(
-                          'Image data type:',
-                          typeof selectedCoupon.termsAndConditionImage,
-                        );
-                        console.log(
-                          'Image data length:',
-                          selectedCoupon.termsAndConditionImage
-                            ? selectedCoupon.termsAndConditionImage.length
-                            : 'null',
-                        );
-                        console.log(
-                          'Image starts with data:',
-                          selectedCoupon.termsAndConditionImage
-                            ? selectedCoupon.termsAndConditionImage.substring(
-                                0,
-                                50,
-                              )
-                            : 'null',
-                        );
-                        console.log(
-                          'screenshot' + selectedCoupon.termsAndConditionImage,
-                        );
-
                         // Enhanced debugging and validation
                         const imageData = selectedCoupon.termsAndConditionImage;
 
-                        // 1. Log the raw image data
-                        console.log(
-                          '🔍 Raw image data length:',
-                          imageData ? imageData.length : 'null',
-                        );
-                        console.log(
-                          '🔍 Raw image data starts with:',
-                          imageData ? imageData.substring(0, 100) : 'null',
-                        );
+                        // 1. (Debug removed)
 
                         // 2. Validate base64 format
                         function isValidBase64Image(data) {
@@ -1216,31 +1179,17 @@ export default function AdminCouponManagement({ navigation }) {
                         }
 
                         const isValidBase64 = isValidBase64Image(imageData);
-                        console.log('✅ Is valid base64 image:', isValidBase64);
 
                         // 3. Check for common issues
                         if (imageData) {
                           if (!imageData.includes('base64,')) {
-                            console.warn(
-                              '⚠️ Possibly invalid base64 string. Missing prefix.',
-                            );
                           }
                           if (imageData.length < 1000) {
-                            console.warn(
-                              '⚠️ Base64 data seems too small:',
-                              imageData.length,
-                            );
                           }
                           if (imageData.length > 1000000) {
-                            console.warn(
-                              '⚠️ Base64 data is very large:',
-                              Math.round(imageData.length / 1024),
-                              'KB',
-                            );
                           }
                         }
 
-                        console.log('=== IMAGE DEBUG END ===');
                         return null;
                       })()}
 
@@ -1256,21 +1205,17 @@ export default function AdminCouponManagement({ navigation }) {
                               imageData.startsWith('http://') ||
                               imageData.startsWith('https://')
                             ) {
-                              console.log('✅ Using S3 URL:', imageData);
                               return imageData;
                             }
 
                             // 2. Check if it's a data URL (legacy format)
                             if (imageData.startsWith('data:')) {
-                              console.log('✅ Using legacy data URL');
                               return imageData;
                             }
                           }
 
                           // 3. Fallback to placeholder
-                          console.log(
-                            '❌ No valid image data, using placeholder',
-                          );
+
                           return 'https://via.placeholder.com/400x200?text=Terms+%26+Conditions+Not+Available';
                         })(),
                       }}
@@ -1294,18 +1239,8 @@ export default function AdminCouponManagement({ navigation }) {
                           selectedCoupon.termsAndConditionImage,
                         );
                       }}
-                      onLoad={() => {
-                        console.log(
-                          '✅ SUCCESS: Image loaded successfully for coupon:',
-                          selectedCoupon.couponId,
-                        );
-                      }}
-                      onLoadStart={() => {
-                        console.log(
-                          '🔄 STARTING: Image load started for coupon:',
-                          selectedCoupon.couponId,
-                        );
-                      }}
+                      onLoad={() => {}}
+                      onLoadStart={() => {}}
                     />
                   </View>
                 ) : (
@@ -1314,23 +1249,6 @@ export default function AdminCouponManagement({ navigation }) {
                     {/* Debug: Log why image is not valid */}
                     {selectedCoupon &&
                       (() => {
-                        console.log('=== NO IMAGE DEBUG ===');
-                        console.log('Coupon ID:', selectedCoupon.couponId);
-                        console.log(
-                          'termsAndConditionImage exists:',
-                          !!selectedCoupon.termsAndConditionImage,
-                        );
-                        console.log(
-                          'termsAndConditionImage value:',
-                          selectedCoupon.termsAndConditionImage,
-                        );
-                        console.log(
-                          'hasValidImageData result:',
-                          hasValidImageData(
-                            selectedCoupon?.termsAndConditionImage,
-                          ),
-                        );
-                        console.log('=== NO IMAGE DEBUG END ===');
                         return null;
                       })()}
                   </View>

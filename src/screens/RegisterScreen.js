@@ -11,6 +11,7 @@ import {
 import { useNavigation, useRoute } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import auth from '@react-native-firebase/auth';
+import { buildApiUrl, API_ENDPOINTS } from '../config/apiConfig';
 
 export default function RegisterScreen() {
   const [firstName, setFirstName] = useState('');
@@ -24,25 +25,28 @@ export default function RegisterScreen() {
   const route = useRoute();
 
   // Validate age (must be 13+ years)
-  const validateAge = (date) => {
+  const validateAge = date => {
     const today = new Date();
     const age = today.getFullYear() - date.getFullYear();
     const monthDiff = today.getMonth() - date.getMonth();
-    
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < date.getDate())) {
+
+    if (
+      monthDiff < 0 ||
+      (monthDiff === 0 && today.getDate() < date.getDate())
+    ) {
       return age - 1;
     }
     return age;
   };
 
   // Validate email format
-  const validateEmail = (email) => {
+  const validateEmail = email => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   };
 
   // Validate UPI ID format
-  const validateUpiId = (upi) => {
+  const validateUpiId = upi => {
     const upiRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z]{3,}$/;
     return upiRegex.test(upi);
   };
@@ -87,7 +91,7 @@ export default function RegisterScreen() {
     }
   };
 
-  const formatDate = (date) => {
+  const formatDate = date => {
     return date.toLocaleDateString('en-GB', {
       day: '2-digit',
       month: '2-digit',
@@ -97,32 +101,32 @@ export default function RegisterScreen() {
 
   const handleRegister = async () => {
     if (!validateForm()) {
-      Alert.alert('Validation Error', 'Please fix the errors before proceeding');
+      Alert.alert(
+        'Validation Error',
+        'Please fix the errors before proceeding',
+      );
       return;
     }
 
     try {
       const user = auth().currentUser;
       const idToken = await user.getIdToken();
-      
-      const res = await fetch(
-        'https://backend-qupon.onrender.com/api/users/register',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${idToken}`,
-          },
-          body: JSON.stringify({ 
-            firstName, 
-            lastName, 
-            email, 
-            upi: upiId,
-            dob: dob.toISOString().split('T')[0] // Format as YYYY-MM-DD
-          }),
+
+      const res = await fetch(buildApiUrl(API_ENDPOINTS.USERS.REGISTER), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${idToken}`,
         },
-      );
-      
+        body: JSON.stringify({
+          firstName,
+          lastName,
+          email,
+          upi: upiId,
+          dob: dob.toISOString().split('T')[0], // Format as YYYY-MM-DD
+        }),
+      });
+
       const data = await res.json();
       if (res.ok) {
         navigation.reset({
@@ -141,14 +145,16 @@ export default function RegisterScreen() {
   return (
     <ScrollView style={styles.container}>
       <Text style={styles.heading}>Complete Your Profile</Text>
-      
+
       <TextInput
         style={[styles.input, errors.firstName && styles.inputError]}
         placeholder="First Name"
         value={firstName}
         onChangeText={setFirstName}
       />
-      {errors.firstName && <Text style={styles.errorText}>{errors.firstName}</Text>}
+      {errors.firstName && (
+        <Text style={styles.errorText}>{errors.firstName}</Text>
+      )}
 
       <TextInput
         style={[styles.input, errors.lastName && styles.inputError]}
@@ -156,7 +162,9 @@ export default function RegisterScreen() {
         value={lastName}
         onChangeText={setLastName}
       />
-      {errors.lastName && <Text style={styles.errorText}>{errors.lastName}</Text>}
+      {errors.lastName && (
+        <Text style={styles.errorText}>{errors.lastName}</Text>
+      )}
 
       <TextInput
         style={[styles.input, errors.email && styles.inputError]}
@@ -177,20 +185,20 @@ export default function RegisterScreen() {
       />
       {errors.upiId && <Text style={styles.errorText}>{errors.upiId}</Text>}
 
-      <TouchableOpacity 
-        style={[styles.input, styles.dateInput, errors.dob && styles.inputError]}
+      <TouchableOpacity
+        style={[
+          styles.input,
+          styles.dateInput,
+          errors.dob && styles.inputError,
+        ]}
         onPress={() => setShowDatePicker(true)}
       >
-        <Text style={styles.dateText}>
-          {formatDate(dob)}
-        </Text>
+        <Text style={styles.dateText}>{formatDate(dob)}</Text>
         <Text style={styles.dateLabel}>Date of Birth</Text>
       </TouchableOpacity>
       {errors.dob && <Text style={styles.errorText}>{errors.dob}</Text>}
-      
-      <Text style={styles.ageText}>
-        Age: {validateAge(dob)} years
-      </Text>
+
+      <Text style={styles.ageText}>Age: {validateAge(dob)} years</Text>
 
       <TouchableOpacity style={styles.button} onPress={handleRegister}>
         <Text style={styles.buttonText}>Complete Registration</Text>

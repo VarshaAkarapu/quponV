@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -15,67 +15,154 @@ import {
   RefreshControl,
 } from 'react-native';
 import auth from '@react-native-firebase/auth';
+import { useAuth } from '../contexts/AuthContext';
 import { getBrandLogo } from '../config/brandConfig';
 import { getAllCategories, getCategoryIcon } from '../config/categoryConfig';
-import { categoryAPI, brandAPI, userAPI } from '../services/apiService';
+import {
+  categoryAPI,
+  brandAPI,
+  userAPI,
+  couponAPI,
+} from '../services/apiService';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
+
+// Responsive design helpers
+const getResponsiveValues = currentWidth => {
+  const isTablet = currentWidth >= 768;
+  const isLargeScreen = currentWidth >= 1024;
+  const menuWidth = isLargeScreen
+    ? currentWidth * 0.4
+    : isTablet
+    ? currentWidth * 0.5
+    : currentWidth * 0.8;
+  return { isTablet, isLargeScreen, menuWidth };
+};
+
+// Initialize responsive values with current dimensions for static styles
+// Note: dynamic, in-component recalculation still happens via state for runtime orientation changes
+const responsiveValues = getResponsiveValues(width);
+const { isTablet, isLargeScreen, menuWidth } = responsiveValues;
 
 export default function HomeScreen({ navigation }) {
+  const { isAdmin } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchTimeout, setSearchTimeout] = useState(null);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [filteredBrands, setFilteredBrands] = useState([]);
+  const searchTimeoutRef = useRef(null);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [popularBrands, setPopularBrands] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [hasApprovedCoupons, setHasApprovedCoupons] = useState(false);
   const [loading, setLoading] = useState(true);
   const [brandsLoading, setBrandsLoading] = useState(true);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
+  const [screenDimensions, setScreenDimensions] = useState({ width, height });
+  const [responsiveValues, setResponsiveValues] = useState(
+    getResponsiveValues(width),
+  );
+  const categoriesListRef = useRef(null);
 
   useEffect(() => {
     loadDynamicData();
   }, []);
 
+  // Listen for screen orientation changes
+  useEffect(() => {
+    let subscription;
+    try {
+      // Check if addEventListener is available
+      if (Dimensions.addEventListener) {
+        subscription = Dimensions.addEventListener('change', ({ window }) => {
+          const newDimensions = { width: window.width, height: window.height };
+          setScreenDimensions(newDimensions);
+          setResponsiveValues(getResponsiveValues(window.width));
+        });
+      }
+    } catch (error) {
+      console.error('Error setting up Dimensions listener:', error);
+    }
+
+    return () => {
+      try {
+        if (subscription?.remove) {
+          subscription.remove();
+        }
+      } catch (error) {
+        console.error('Error removing Dimensions listener:', error);
+      }
+    };
+  }, []);
+
   const loadDynamicData = async () => {
     try {
       setLoading(true);
+      console.log('🔍 Loading dynamic data...');
 
-      // Load popular brands and categories in parallel
-      const [brandsData, categoriesData] = await Promise.allSettled([
-        brandAPI.getAll(),
-        categoryAPI.getAll(),
-      ]);
+      // Load popular brands, categories, and coupons in parallel with error handling
+      const [brandsData, categoriesData, couponsData] =
+        await Promise.allSettled([
+          brandAPI.getAll().catch(error => {
+            console.error('Brand API error:', error);
+            return [];
+          }),
+          categoryAPI.getAll().catch(error => {
+            console.error('Category API error:', error);
+            return [];
+          }),
+          couponAPI
+            .getAll()
+            .then(all => (Array.isArray(all) ? all : []))
+            .catch(error => {
+              console.error('Coupon API error:', error);
+              return [];
+            }),
+        ]);
 
       // Handle brands data
       if (brandsData.status === 'fulfilled') {
-        // Debug: Log the first brand to understand the structure
-        if (brandsData.value && brandsData.value.length > 0) {
-          console.log('🔍 First brand data structure:', brandsData.value[0]);
-          console.log('📊 Total brands loaded:', brandsData.value.length);
-        }
-        // Filter out the flights brand and show all other brands
-        const filteredBrands = brandsData.value.filter(
+        const brands = brandsData.value || [];
+        console.log('📊 Brands loaded:', brands.length);
+        const filteredBrands = brands.filter(
           brand =>
-            brand.brandName && brand.brandName.toLowerCase() !== 'flights',
+            brand &&
+            brand.brandName &&
+            brand.brandName.toLowerCase() !== 'flights',
         );
         setPopularBrands(filteredBrands);
       } else {
         console.error('Failed to load brands:', brandsData.reason);
-        // Fallback to empty array, will show loading state
         setPopularBrands([]);
       }
       setBrandsLoading(false);
 
       // Handle categories data
       if (categoriesData.status === 'fulfilled') {
-        setCategories(categoriesData.value);
+        const categories = categoriesData.value || [];
+        console.log('📊 Categories loaded:', categories.length);
+        setCategories(categories);
       } else {
         console.error('Failed to load categories:', categoriesData.reason);
-        // Fallback to empty array, will show loading state
         setCategories([]);
       }
       setCategoriesLoading(false);
+
+      // Handle coupons data → determine if there are approved coupons
+      if (couponsData.status === 'fulfilled') {
+        const coupons = couponsData.value || [];
+        const anyApproved = coupons.some(c => c && c.status === 'approved');
+        setHasApprovedCoupons(anyApproved);
+        console.log('📊 Approved coupons exist:', anyApproved);
+      } else {
+        console.error('Failed to load coupons:', couponsData.reason);
+        setHasApprovedCoupons(false);
+      }
+
+      console.log('🔍 Dynamic data loaded successfully');
     } catch (error) {
       console.error('Error loading dynamic data:', error);
+      setPopularBrands([]);
+      setCategories([]);
       setBrandsLoading(false);
       setCategoriesLoading(false);
     } finally {
@@ -98,23 +185,42 @@ export default function HomeScreen({ navigation }) {
     navigation.navigate('UploadCoupon');
   };
 
+  const performSearch = () => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) {
+      setShowSuggestions(false);
+      setFilteredBrands([]);
+      return;
+    }
+    const matches = (popularBrands || [])
+      .map(b => ({
+        original: b,
+        name: (b.brandName || b.name || '').toString(),
+      }))
+      .filter(x => x.name.toLowerCase().includes(q))
+      .slice(0, 10);
+    setFilteredBrands(matches);
+    setShowSuggestions(matches.length > 0);
+  };
+
   const handleSearch = text => {
     setSearchQuery(text);
 
     // Clear existing timeout
-    if (searchTimeout) {
-      clearTimeout(searchTimeout);
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
     }
 
-    // Set new timeout for debouncing
-    const newTimeout = setTimeout(() => {
-      // Navigate to browse screen with search query
-      if (text.trim()) {
-        navigation.navigate('BrowseDeals', { searchQuery: text.trim() });
+    // Set new timeout for debouncing (1s) - only show suggestions
+    searchTimeoutRef.current = setTimeout(() => {
+      const q = text.trim();
+      if (q) {
+        performSearch(); // Show suggestions instead of navigating
+      } else {
+        setShowSuggestions(false);
+        setFilteredBrands([]);
       }
-    }, 500);
-
-    setSearchTimeout(newTimeout);
+    }, 1000);
   };
 
   const handleBrandPress = brand => {
@@ -132,8 +238,8 @@ export default function HomeScreen({ navigation }) {
   };
 
   const renderBrandItem = ({ item }) => {
-    // Debug: Log the brand item being rendered
-    console.log('🎨 Rendering brand item:', item);
+    const brandName = item.brandName || item.name;
+    const logoSource = getBrandLogo(brandName);
 
     return (
       <TouchableOpacity
@@ -141,78 +247,162 @@ export default function HomeScreen({ navigation }) {
         onPress={() => handleBrandPress(item)}
       >
         <Image
-          source={getBrandLogo(item.brandName || item.name)}
+          source={logoSource}
           style={styles.brandLogo}
           resizeMode="contain"
         />
-        <Text style={styles.brandName}>{item.brandName || item.name}</Text>
+        <Text style={styles.brandName}>{brandName}</Text>
       </TouchableOpacity>
     );
   };
 
-  const renderCategoryItem = ({ item }) => (
-    <TouchableOpacity
-      style={styles.categoryItem}
-      onPress={() => handleCategoryPress(item)}
-    >
-      <Image
-        source={getCategoryIcon(item.icon || item.name)}
-        style={styles.categoryIcon}
-        resizeMode="contain"
-      />
-      <Text style={styles.categoryName}>{item.name}</Text>
-    </TouchableOpacity>
-  );
+  const renderCategoryItem = ({ item }) => {
+    const categoryName = item.name;
+    const iconSource = getCategoryIcon(item.icon || item.name);
 
-  const renderBrandsSection = () => (
-    <View style={styles.section}>
-      <Text style={styles.sectionTitle}>All Brands</Text>
-      {brandsLoading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="small" color="#B71C1C" />
-          <Text style={styles.loadingText}>Loading brands...</Text>
-        </View>
-      ) : popularBrands.length > 0 ? (
-        <FlatList
-          data={popularBrands}
-          renderItem={renderBrandItem}
-          keyExtractor={item => item.id || item._id}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.brandsList}
+    return (
+      <TouchableOpacity
+        style={styles.categoryItem}
+        onPress={() => handleCategoryPress(item)}
+      >
+        <Image
+          source={iconSource}
+          style={styles.categoryIcon}
+          resizeMode="contain"
         />
-      ) : (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No brands available</Text>
-        </View>
-      )}
-    </View>
-  );
+        <Text style={styles.categoryName}>{categoryName}</Text>
+      </TouchableOpacity>
+    );
+  };
 
-  const renderCategoriesSection = () => (
-    <View style={styles.section}>
-      <Text style={styles.sectionTitle}>Browse by Category</Text>
-      {categoriesLoading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="small" color="#B71C1C" />
-          <Text style={styles.loadingText}>Loading categories...</Text>
-        </View>
-      ) : categories.length > 0 ? (
-        <FlatList
-          data={categories}
-          renderItem={renderCategoryItem}
-          keyExtractor={item => item.id || item._id}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.categoriesList}
-        />
-      ) : (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No categories available</Text>
-        </View>
-      )}
-    </View>
-  );
+  const renderBrandsSection = () => {
+    return (
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>All Brands</Text>
+        {brandsLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="small" color="#B71C1C" />
+            <Text style={styles.loadingText}>Loading brands...</Text>
+          </View>
+        ) : popularBrands.length > 0 ? (
+          <FlatList
+            data={popularBrands}
+            renderItem={renderBrandItem}
+            keyExtractor={item => item.id || item._id}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.brandsList}
+          />
+        ) : (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>No brands available</Text>
+          </View>
+        )}
+      </View>
+    );
+  };
+
+  const renderCategoriesSection = () => {
+    const categoriesToShow = categories || [];
+    const showHorizontal = hasApprovedCoupons && categoriesToShow.length > 0;
+    const showGrid = !hasApprovedCoupons && categoriesToShow.length > 0;
+
+    return (
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Browse by Category</Text>
+        {categoriesLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="small" color="#B71C1C" />
+            <Text style={styles.loadingText}>Loading categories...</Text>
+          </View>
+        ) : categoriesToShow.length > 0 ? (
+          showHorizontal ? (
+            <View>
+              <View style={styles.categoriesHorizontalWrapper}>
+                {categoriesToShow.length > 5 && (
+                  <TouchableOpacity
+                    style={[styles.scrollArrow, styles.scrollArrowLeft]}
+                    onPress={() => {
+                      try {
+                        categoriesListRef.current?.scrollToOffset?.({
+                          offset: Math.max(
+                            0,
+                            (categoriesListRef.current?._lastOffset || 0) -
+                              5 * 120,
+                          ),
+                          animated: true,
+                        });
+                      } catch {}
+                    }}
+                    accessibilityLabel="Scroll categories left"
+                  >
+                    <Text style={styles.arrowText}>{'‹'}</Text>
+                  </TouchableOpacity>
+                )}
+
+                <FlatList
+                  ref={categoriesListRef}
+                  data={categoriesToShow}
+                  renderItem={renderCategoryItem}
+                  keyExtractor={item => item.id || item._id || item.name}
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.categoriesList}
+                  onScroll={e => {
+                    // Track last scroll offset for arrow paging
+                    categoriesListRef.current._lastOffset =
+                      e.nativeEvent.contentOffset.x;
+                  }}
+                />
+
+                {categoriesToShow.length > 5 && (
+                  <TouchableOpacity
+                    style={[styles.scrollArrow, styles.scrollArrowRight]}
+                    onPress={() => {
+                      try {
+                        const current =
+                          categoriesListRef.current?._lastOffset || 0;
+                        categoriesListRef.current?.scrollToOffset?.({
+                          offset: current + 5 * 120,
+                          animated: true,
+                        });
+                      } catch {}
+                    }}
+                    accessibilityLabel="Scroll categories right"
+                  >
+                    <Text style={styles.arrowText}>{'›'}</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+          ) : (
+            // Grid view: two rows, 5 columns (max 10 items)
+            <FlatList
+              data={categoriesToShow.slice(0, 10)}
+              renderItem={renderCategoryItem}
+              keyExtractor={item => item.id || item._id || item.name}
+              numColumns={5}
+              columnWrapperStyle={styles.categoriesGridRow}
+              contentContainerStyle={styles.categoriesGrid}
+              scrollEnabled={false}
+            />
+          )
+        ) : (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>No categories available</Text>
+          </View>
+        )}
+      </View>
+    );
+  };
+
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
 
   return (
     <View style={styles.container}>
@@ -252,15 +442,54 @@ export default function HomeScreen({ navigation }) {
         {/* Search Bar */}
         <View style={styles.searchContainer}>
           <View style={styles.searchBar}>
-            <Text style={styles.searchIcon}>🔍</Text>
+            <TouchableOpacity
+              onPress={performSearch}
+              accessibilityLabel="Search"
+            >
+              <Text style={styles.searchIcon}>🔍</Text>
+            </TouchableOpacity>
             <TextInput
               style={styles.searchInput}
               placeholder="Search for brands..."
               placeholderTextColor="#999"
               value={searchQuery}
               onChangeText={handleSearch}
+              returnKeyType="search"
             />
           </View>
+          {showSuggestions && filteredBrands.length > 0 && (
+            <View style={styles.suggestionsContainer}>
+              <FlatList
+                data={filteredBrands}
+                keyExtractor={(item, idx) =>
+                  item.original.id || item.original._id || item.name + '-' + idx
+                }
+                keyboardShouldPersistTaps="handled"
+                renderItem={({ item }) => {
+                  const displayName = item.name;
+                  const logoSource = getBrandLogo(displayName);
+                  return (
+                    <TouchableOpacity
+                      style={styles.suggestionItem}
+                      onPress={() => {
+                        setShowSuggestions(false);
+                        navigation.navigate('BrowseDeals', {
+                          brandFilter: displayName,
+                          searchQuery: displayName,
+                        });
+                      }}
+                    >
+                      <Image
+                        source={logoSource}
+                        style={styles.suggestionIcon}
+                      />
+                      <Text style={styles.suggestionText}>{displayName}</Text>
+                    </TouchableOpacity>
+                  );
+                }}
+              />
+            </View>
+          )}
         </View>
 
         {/* Informational Message */}
@@ -282,7 +511,7 @@ export default function HomeScreen({ navigation }) {
             style={styles.uploadButton}
             onPress={handleUploadPress}
           >
-            <Text style={styles.uploadText}>upload coupon</Text>
+            <Text style={styles.uploadText}>Upload Coupon</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -406,6 +635,17 @@ export default function HomeScreen({ navigation }) {
                 <Text style={styles.closeButton}>✕</Text>
               </TouchableOpacity>
             </View>
+            {isAdmin && (
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => {
+                  setShowProfileMenu(false);
+                  navigation.navigate('AdminDashboard');
+                }}
+              >
+                <Text style={styles.menuItemText}>Admin</Text>
+              </TouchableOpacity>
+            )}
             <TouchableOpacity
               style={styles.menuItem}
               onPress={() => {
@@ -433,15 +673,6 @@ export default function HomeScreen({ navigation }) {
             >
               <Text style={styles.menuItemText}>About Us</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => {
-                setShowProfileMenu(false);
-                navigation.navigate('BrowseDeals');
-              }}
-            >
-              <Text style={styles.menuItemText}>Categories</Text>
-            </TouchableOpacity>
           </View>
         </View>
       )}
@@ -458,9 +689,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 50,
-    paddingBottom: 15,
+    paddingHorizontal: responsiveValues.isTablet ? 30 : 20,
+    paddingTop: responsiveValues.isTablet ? 60 : 50,
+    paddingBottom: responsiveValues.isTablet ? 20 : 15,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
@@ -477,12 +708,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerLogo: {
-    width: 30,
-    height: 30,
-    marginRight: 8,
+    width: responsiveValues.isTablet ? 40 : 30,
+    height: responsiveValues.isTablet ? 40 : 30,
+    marginRight: responsiveValues.isTablet ? 6 : 4,
   },
   headerLogoText: {
-    fontSize: 20,
+    fontSize: responsiveValues.isTablet ? 24 : 20,
     fontWeight: 'bold',
     color: '#111',
   },
@@ -497,8 +728,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   searchContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 15,
+    paddingHorizontal: responsiveValues.isTablet ? 30 : 20,
+    paddingVertical: responsiveValues.isTablet ? 20 : 15,
   },
   searchBar: {
     flexDirection: 'row',
@@ -507,6 +738,36 @@ const styles = StyleSheet.create({
     borderRadius: 25,
     paddingHorizontal: 15,
     paddingVertical: 12,
+  },
+  suggestionsContainer: {
+    backgroundColor: '#fff',
+    marginTop: 8,
+    marginHorizontal: responsiveValues.isTablet ? 30 : 20,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#eee',
+    maxHeight: 260,
+    overflow: 'hidden',
+    elevation: 3,
+  },
+  suggestionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f3f3',
+  },
+  suggestionIcon: {
+    width: 26,
+    height: 26,
+    marginRight: 10,
+    borderRadius: 6,
+    resizeMode: 'contain',
+  },
+  suggestionText: {
+    fontSize: 14,
+    color: '#333',
   },
   searchIcon: {
     fontSize: 18,
@@ -542,11 +803,11 @@ const styles = StyleSheet.create({
     marginBottom: 25,
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: responsiveValues.isTablet ? 24 : 20,
     fontWeight: 'bold',
     color: '#111',
-    marginBottom: 15,
-    paddingHorizontal: 20,
+    marginBottom: responsiveValues.isTablet ? 20 : 15,
+    paddingHorizontal: responsiveValues.isTablet ? 30 : 20,
   },
   loadingContainer: {
     alignItems: 'center',
@@ -566,7 +827,7 @@ const styles = StyleSheet.create({
     color: '#999',
   },
   brandsList: {
-    paddingHorizontal: 20,
+    paddingHorizontal: responsiveValues.isTablet ? 30 : 20,
   },
   brandItem: {
     alignItems: 'center',
@@ -588,9 +849,9 @@ const styles = StyleSheet.create({
   buttonGroup: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginBottom: 20,
-    paddingHorizontal: 20,
-    gap: 15,
+    marginBottom: responsiveValues.isTablet ? 30 : 20,
+    paddingHorizontal: responsiveValues.isTablet ? 30 : 20,
+    gap: responsiveValues.isTablet ? 20 : 15,
   },
   uploadButton: {
     backgroundColor: '#B71C1C',
@@ -603,13 +864,13 @@ const styles = StyleSheet.create({
   uploadText: {
     color: '#fff',
     fontWeight: 'bold',
-    fontSize: 16,
+    fontSize: responsiveValues.isTablet ? 18 : 16,
     textTransform: 'lowercase',
   },
   browseButton: {
     backgroundColor: '#666',
-    paddingVertical: 15,
-    paddingHorizontal: 25,
+    paddingVertical: responsiveValues.isTablet ? 18 : 15,
+    paddingHorizontal: responsiveValues.isTablet ? 30 : 25,
     borderRadius: 25,
     flex: 1,
     alignItems: 'center',
@@ -617,17 +878,50 @@ const styles = StyleSheet.create({
   browseText: {
     color: '#fff',
     fontWeight: 'bold',
-    fontSize: 16,
+    fontSize: responsiveValues.isTablet ? 18 : 16,
   },
   tagline: {
-    fontSize: 18,
+    fontSize: responsiveValues.isTablet ? 22 : 18,
     fontWeight: 'bold',
     textAlign: 'center',
     color: '#111',
-    marginBottom: 25,
+    marginBottom: responsiveValues.isTablet ? 35 : 25,
   },
   categoriesList: {
-    paddingHorizontal: 20,
+    paddingHorizontal: responsiveValues.isTablet ? 30 : 20,
+  },
+  categoriesHorizontalWrapper: {
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scrollArrow: {
+    position: 'absolute',
+    zIndex: 10,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(0,0,0,0.05)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scrollArrowLeft: {
+    left: 8,
+  },
+  scrollArrowRight: {
+    right: 8,
+  },
+  arrowText: {
+    fontSize: 18,
+    color: '#333',
+  },
+  categoriesGrid: {
+    paddingHorizontal: responsiveValues.isTablet ? 16 : 12,
+    rowGap: 12,
+  },
+  categoriesGridRow: {
+    justifyContent: 'space-between',
+    marginBottom: 12,
   },
   categoryItem: {
     alignItems: 'center',
@@ -724,37 +1018,46 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     left: 0,
-    width: width * 0.7,
+    width: responsiveValues.menuWidth,
     height: '100%',
     backgroundColor: '#fff',
-    paddingTop: 50,
-    paddingHorizontal: 20,
+    paddingTop: responsiveValues.isTablet ? 60 : 50,
+    paddingHorizontal: responsiveValues.isTablet ? 30 : 20,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 2,
+      height: 0,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   menuHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 30,
-    paddingBottom: 15,
+    marginBottom: responsiveValues.isTablet ? 40 : 30,
+    paddingBottom: responsiveValues.isTablet ? 20 : 15,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
   },
   menuTitle: {
-    fontSize: 20,
+    fontSize: responsiveValues.isTablet ? 24 : 20,
     fontWeight: 'bold',
     color: '#111',
   },
   closeButton: {
-    fontSize: 24,
+    fontSize: responsiveValues.isTablet ? 28 : 24,
     color: '#666',
+    padding: 5,
   },
   menuItem: {
-    paddingVertical: 15,
+    paddingVertical: responsiveValues.isTablet ? 20 : 15,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
   },
   menuItemText: {
-    fontSize: 16,
+    fontSize: responsiveValues.isTablet ? 18 : 16,
     color: '#333',
   },
 });
