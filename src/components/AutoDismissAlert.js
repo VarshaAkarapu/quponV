@@ -1,19 +1,13 @@
-import React, { useEffect, useRef } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Animated,
-  Dimensions,
-} from 'react-native';
+import React, { useEffect, useRef, useCallback } from 'react';
+import { View, Text, StyleSheet, Animated } from 'react-native';
 
-const { width } = Dimensions.get('window');
+// const { width } = Dimensions.get('window'); // Unused variable
 
-const AutoDismissAlert = ({ 
-  visible, 
-  message, 
+const AutoDismissAlert = ({
+  visible,
+  message,
   type = 'success', // 'success', 'error', 'info'
-  onDismiss 
+  onDismiss,
 }) => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(-100)).current;
@@ -41,9 +35,9 @@ const AutoDismissAlert = ({
 
       return () => clearTimeout(timer);
     }
-  }, [visible]);
+  }, [visible, dismissAlert, fadeAnim, slideAnim]);
 
-  const dismissAlert = () => {
+  const dismissAlert = useCallback(() => {
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 0,
@@ -58,7 +52,7 @@ const AutoDismissAlert = ({
     ]).start(() => {
       onDismiss();
     });
-  };
+  }, [fadeAnim, slideAnim, onDismiss]);
 
   if (!visible) return null;
 
@@ -143,4 +137,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default AutoDismissAlert; 
+export default AutoDismissAlert;

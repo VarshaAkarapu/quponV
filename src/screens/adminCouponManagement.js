@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -70,7 +70,7 @@ export default function AdminCouponManagement({ navigation }) {
     };
 
     initializeData();
-  }, []);
+  }, [fetchCoupons]);
 
   // Add focus listener to reload data when returning to screen
   useEffect(() => {
@@ -91,10 +91,10 @@ export default function AdminCouponManagement({ navigation }) {
     });
 
     return unsubscribe;
-  }, [navigation, showEditModal]);
+  }, [navigation, showEditModal, fetchCoupons, loadLocalStatusChanges]);
 
   // Load local status changes from AsyncStorage
-  const loadLocalStatusChanges = async () => {
+  const loadLocalStatusChanges = useCallback(async () => {
     try {
       const savedChanges = await AsyncStorage.getItem('couponStatusChanges');
       if (savedChanges) {
@@ -103,7 +103,7 @@ export default function AdminCouponManagement({ navigation }) {
     } catch (error) {
       console.error('Error loading local status changes:', error);
     }
-  };
+  }, []);
 
   // Save local status changes to AsyncStorage
   const saveLocalStatusChanges = async changes => {
@@ -137,52 +137,55 @@ export default function AdminCouponManagement({ navigation }) {
     });
   };
 
-  const fetchCoupons = async (currentLocalChanges = null) => {
-    try {
-      const response = await fetch(
-        'https://m8igs45g3a.execute-api.ap-south-1.amazonaws.com/dev/api/coupons',
-      );
+  const fetchCoupons = useCallback(
+    async (currentLocalChanges = null) => {
+      try {
+        const response = await fetch(
+          'https://m8igs45g3a.execute-api.ap-south-1.amazonaws.com/dev/api/coupons',
+        );
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const coupons = await response.json();
+        // The getAllCoupons API returns an array directly, not wrapped in success/coupons
+        // Fetched coupons from backend
+
+        // Use provided local changes or current state
+        const changesToApply = currentLocalChanges || localStatusChanges;
+
+        // Merge local status changes and edit changes with fetched data
+        const mergedCoupons = coupons.map(coupon => {
+          const statusChange =
+            changesToApply[coupon.couponId] || coupon.status || 'pending';
+          const editChange = editChanges[coupon.couponId];
+
+          return {
+            ...coupon,
+            status: statusChange,
+            // Apply edit changes if they exist
+            ...(editChange && {
+              couponCode: editChange.couponCode,
+              price: editChange.price,
+              expireDate: editChange.expireDate,
+              description: editChange.description,
+            }),
+          };
+        });
+
+        // Applied local status changes
+
+        setCoupons(mergedCoupons);
+      } catch (error) {
+        Alert.alert('Error', 'Failed to load coupons');
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
       }
-
-      const coupons = await response.json();
-      // The getAllCoupons API returns an array directly, not wrapped in success/coupons
-      // Fetched coupons from backend
-
-      // Use provided local changes or current state
-      const changesToApply = currentLocalChanges || localStatusChanges;
-
-      // Merge local status changes and edit changes with fetched data
-      const mergedCoupons = coupons.map(coupon => {
-        const statusChange =
-          changesToApply[coupon.couponId] || coupon.status || 'pending';
-        const editChange = editChanges[coupon.couponId];
-
-        return {
-          ...coupon,
-          status: statusChange,
-          // Apply edit changes if they exist
-          ...(editChange && {
-            couponCode: editChange.couponCode,
-            price: editChange.price,
-            expireDate: editChange.expireDate,
-            description: editChange.description,
-          }),
-        };
-      });
-
-      // Applied local status changes
-
-      setCoupons(mergedCoupons);
-    } catch (error) {
-      Alert.alert('Error', 'Failed to load coupons');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
+    },
+    [localStatusChanges, editChanges],
+  );
 
   const fetchCategories = async () => {
     try {
@@ -384,7 +387,7 @@ export default function AdminCouponManagement({ navigation }) {
     }
   };
 
-  const checkForUnsavedChanges = () => {
+  const checkForUnsavedChanges = useCallback(() => {
     if (!selectedCoupon) return false;
 
     // Convert values to strings for comparison to handle type mismatches
@@ -404,14 +407,14 @@ export default function AdminCouponManagement({ navigation }) {
         normalizeValue(selectedCoupon.description);
 
     return hasChanges;
-  };
+  }, [selectedCoupon, editData]);
 
   // Update unsaved changes state whenever editData changes
   useEffect(() => {
     if (selectedCoupon) {
       setHasUnsavedChanges(checkForUnsavedChanges());
     }
-  }, [editData, selectedCoupon]);
+  }, [editData, selectedCoupon, checkForUnsavedChanges]);
 
   const handleCancelEdit = () => {
     // Check if there are any unsaved changes

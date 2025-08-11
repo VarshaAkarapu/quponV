@@ -503,7 +503,18 @@ export default function UploadCouponScreen({ navigation }) {
       >
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
+          <TouchableOpacity
+            onPress={() => {
+              console.log('🔙 Back button pressed in UploadCouponScreen');
+              try {
+                navigation.goBack();
+              } catch (error) {
+                console.log('🔙 goBack failed, trying navigate to Home');
+                navigation.navigate('Home');
+              }
+            }}
+            style={styles.backButton}
+          >
             <Text style={styles.backArrow}>←</Text>
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Upload Coupon</Text>
@@ -703,6 +714,16 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
+    backgroundColor: '#fff',
+    zIndex: 9999,
+    elevation: 5,
+  },
+  backButton: {
+    padding: 8,
+    minWidth: 40,
+    minHeight: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   backArrow: {
     fontSize: 24,

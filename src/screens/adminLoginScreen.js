@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -35,117 +35,125 @@ export default function AdminLoginScreen({ navigation }) {
     });
 
     return unsubscribe;
-  }, []);
+  }, [checkAdminStatus]);
 
-  const checkAdminStatus = async phone => {
-    try {
-      console.log('🔐 Starting admin status check for phone:', phone);
+  const checkAdminStatus = useCallback(
+    async phone => {
+      try {
+        console.log('🔐 Starting admin status check for phone:', phone);
 
-      // Use POST method with phone in body
-      const apiUrl =
-        'https://m8igs45g3a.execute-api.ap-south-1.amazonaws.com/dev/api/users/phone';
-      console.log('🔐 API URL:', apiUrl);
+        // Use POST method with phone in body
+        const apiUrl =
+          'https://m8igs45g3a.execute-api.ap-south-1.amazonaws.com/dev/api/users/phone';
+        console.log('🔐 API URL:', apiUrl);
 
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ phone }),
-      });
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ phone }),
+        });
 
-      console.log('🔐 Response status:', response.status);
-      console.log('🔐 Response ok:', response.ok);
+        console.log('🔐 Response status:', response.status);
+        console.log('🔐 Response ok:', response.ok);
 
-      if (response.ok) {
-        const data = await response.json();
-        console.log('🔐 AdminLogin check result:', data);
-        console.log(
-          '🔐 User role:',
-          data.user?.role,
-          'Type:',
-          typeof data.user?.role,
-        );
-
-        if (data.success && data.user && isAdminRole(data.user.role)) {
-          console.log('✅ Admin verified - storing admin user data');
-          console.log('✅ Admin user data to store:', data.user);
-
-          // Add phone number to admin user data for proper comparison
-          const adminUserDataWithPhone = {
-            ...data.user,
-            phoneNumber: phone, // Add the phone number from current user
-          };
-          console.log('✅ Admin user data with phone:', adminUserDataWithPhone);
-          await storeAdminUser(adminUserDataWithPhone);
-          console.log('✅ Admin user data stored, waiting for state update...');
-
-          // Force a small delay to ensure AsyncStorage is written
-          await new Promise(resolve => setTimeout(resolve, 200));
-
-          // Verify the data was stored correctly
-          const storedData = await AsyncStorage.getItem('adminUser');
+        if (response.ok) {
+          const data = await response.json();
+          console.log('🔐 AdminLogin check result:', data);
           console.log(
-            '✅ Verified stored admin data:',
-            storedData ? 'exists' : 'missing',
+            '🔐 User role:',
+            data.user?.role,
+            'Type:',
+            typeof data.user?.role,
           );
-          if (storedData) {
-            const parsedStoredData = JSON.parse(storedData);
-            console.log('✅ Stored admin data content:', parsedStoredData);
+
+          if (data.success && data.user && isAdminRole(data.user.role)) {
+            console.log('✅ Admin verified - storing admin user data');
+            console.log('✅ Admin user data to store:', data.user);
+
+            // Add phone number to admin user data for proper comparison
+            const adminUserDataWithPhone = {
+              ...data.user,
+              phoneNumber: phone, // Add the phone number from current user
+            };
+            console.log(
+              '✅ Admin user data with phone:',
+              adminUserDataWithPhone,
+            );
+            await storeAdminUser(adminUserDataWithPhone);
+            console.log(
+              '✅ Admin user data stored, waiting for state update...',
+            );
+
+            // Force a small delay to ensure AsyncStorage is written
+            await new Promise(resolve => setTimeout(resolve, 200));
+
+            // Verify the data was stored correctly
+            const storedData = await AsyncStorage.getItem('adminUser');
+            console.log(
+              '✅ Verified stored admin data:',
+              storedData ? 'exists' : 'missing',
+            );
+            if (storedData) {
+              const parsedStoredData = JSON.parse(storedData);
+              console.log('✅ Stored admin data content:', parsedStoredData);
+            }
+
+            // Show success alert before navigation
+            Alert.alert(
+              'Admin Login Successful',
+              'Redirecting to Admin Dashboard...',
+              [],
+              { cancelable: false },
+            );
+
+            console.log('✅ Navigating to AdminDashboard');
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'AdminDashboard' }],
+            });
+          } else {
+            console.log('❌ Admin verification failed - user is not admin');
+            console.log('❌ User data:', data.user);
+            console.log('❌ User role:', data.user?.role);
+            Alert.alert(
+              'Access Denied',
+              'This phone number is not authorized for admin access.',
+            );
+            auth(getApp()).signOut();
           }
-
-          // Show success alert before navigation
-          Alert.alert(
-            'Admin Login Successful',
-            'Redirecting to Admin Dashboard...',
-            [],
-            { cancelable: false },
-          );
-
-          console.log('✅ Navigating to AdminDashboard');
-          navigation.reset({
-            index: 0,
-            routes: [{ name: 'AdminDashboard' }],
-          });
         } else {
-          console.log('❌ Admin verification failed - user is not admin');
-          console.log('❌ User data:', data.user);
-          console.log('❌ User role:', data.user?.role);
-          Alert.alert(
-            'Access Denied',
-            'This phone number is not authorized for admin access.',
-          );
+          const errorText = await response.text();
+          console.log('❌ Backend error response:', errorText);
+          console.log('❌ Backend status:', response.status);
+
+          if (response.status === 404) {
+            console.log('❌ User not found in database');
+            Alert.alert(
+              'Access Denied',
+              'User not found in database. Please register first.',
+            );
+          } else {
+            console.log('❌ Backend error during admin check');
+            Alert.alert(
+              'Error',
+              'Failed to verify admin status. Please try again.',
+            );
+          }
           auth(getApp()).signOut();
         }
-      } else {
-        const errorText = await response.text();
-        console.log('❌ Backend error response:', errorText);
-        console.log('❌ Backend status:', response.status);
-
-        if (response.status === 404) {
-          console.log('❌ User not found in database');
-          Alert.alert(
-            'Access Denied',
-            'User not found in database. Please register first.',
-          );
-        } else {
-          console.log('❌ Backend error during admin check');
-          Alert.alert(
-            'Error',
-            'Failed to verify admin status. Please try again.',
-          );
-        }
+      } catch (error) {
+        console.error('❌ Network error checking admin status:', error);
+        Alert.alert(
+          'Error',
+          'Network error. Please check your connection and try again.',
+        );
         auth(getApp()).signOut();
       }
-    } catch (error) {
-      console.error('❌ Network error checking admin status:', error);
-      Alert.alert(
-        'Error',
-        'Network error. Please check your connection and try again.',
-      );
-      auth(getApp()).signOut();
-    }
-  };
+    },
+    [navigation],
+  );
 
   const sendOTP = async () => {
     if (!phoneNumber || phoneNumber.length < 10) {

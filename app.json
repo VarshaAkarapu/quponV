@@ -1,4 +1,26 @@
 {
   "name": "quponV",
-  "displayName": "quponV"
+  "displayName": "QuponV",
+  "version": "1.0.0",
+  "description": "A coupon and deals discovery app",
+  "author": "QuponV Team",
+  "license": "MIT",
+  "platforms": ["android", "ios"],
+  "android": {
+    "package": "com.quponV",
+    "versionCode": 1,
+    "versionName": "1.0.0",
+    "permissions": [
+      "android.permission.INTERNET",
+      "android.permission.RECEIVE_SMS",
+      "android.permission.CAMERA",
+      "android.permission.READ_EXTERNAL_STORAGE",
+      "android.permission.READ_MEDIA_IMAGES"
+    ]
+  },
+  "ios": {
+    "bundleIdentifier": "com.quponV.app",
+    "buildNumber": "1",
+    "version": "1.0.0"
+  }
 }

@@ -22,20 +22,7 @@ import { userAPI, couponAPI } from '../services/apiService';
 const { width, height } = Dimensions.get('window');
 
 export default function ProfileScreen({ navigation }) {
-  let authContext;
-  try {
-    authContext = useAuth();
-  } catch (error) {
-    console.error('Error accessing AuthContext:', error);
-    // Provide fallback values
-    authContext = {
-      currentUser: null,
-      isAdmin: false,
-      userData: null,
-      signOut: () => {},
-      isAuthenticated: false,
-    };
-  }
+  const authContext = useAuth();
 
   const {
     currentUser: authUser,
@@ -66,13 +53,19 @@ export default function ProfileScreen({ navigation }) {
       }
       loadPurchasedCoupons();
     }
-  }, [authUserData, authUser, isAuthenticated]);
+  }, [
+    authUserData,
+    authUser,
+    isAuthenticated,
+    loadPurchasedCoupons,
+    loadUserData,
+  ]);
 
   useEffect(() => {
     if (activeTab === 'uploaded' && isAuthenticated) {
       loadUploadedCoupons();
     }
-  }, [activeTab, isAuthenticated]);
+  }, [activeTab, isAuthenticated, loadUploadedCoupons]);
 
   const checkCurrentUser = () => {
     const user = auth().currentUser;
@@ -205,12 +198,12 @@ export default function ProfileScreen({ navigation }) {
 
       console.log('🔍 Loading purchased coupons for user:', userId);
 
-      const purchasedCoupons = await couponAPI.getByUser(userId);
+      const purchasedCouponsData = await couponAPI.getByUser(userId);
       console.log(
         '🔍 Purchased coupons loaded:',
-        purchasedCoupons?.length || 0,
+        purchasedCouponsData?.length || 0,
       );
-      setPurchasedCoupons(purchasedCoupons || []);
+      setPurchasedCoupons(purchasedCouponsData || []);
     } catch (error) {
       console.error('Error loading purchased coupons:', error);
       // Don't throw error, just set empty array
@@ -350,7 +343,9 @@ export default function ProfileScreen({ navigation }) {
           <Text
             style={[
               styles.statusText,
-              { color: coupon.status === 'approved' ? '#4CAF50' : '#FF9800' },
+              coupon.status === 'approved'
+                ? styles.approvedStatus
+                : styles.pendingStatus,
             ]}
           >
             {coupon.status}
@@ -926,6 +921,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: 'bold',
     textTransform: 'uppercase',
+  },
+  approvedStatus: {
+    color: '#4CAF50',
+  },
+  pendingStatus: {
+    color: '#FF9800',
   },
   couponDescription: {
     fontSize: 14,

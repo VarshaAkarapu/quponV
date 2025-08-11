@@ -71,9 +71,9 @@ export default function AdminUploadCoupon({ navigation }) {
     loadAdminData();
     fetchCategories();
     fetchBrands();
-  }, []);
+  }, [loadAdminData, fetchCategories, fetchBrands]);
 
-  const loadAdminData = async () => {
+  const loadAdminData = useCallback(async () => {
     try {
       const adminData = await AsyncStorage.getItem('adminUser');
       if (adminData) {
@@ -98,7 +98,7 @@ export default function AdminUploadCoupon({ navigation }) {
     } finally {
       setIsLoadingAdmin(false);
     }
-  };
+  }, [navigation]);
 
   // Debounce function
   const debounce = (func, wait) => {

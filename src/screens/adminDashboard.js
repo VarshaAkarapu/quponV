@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -119,7 +119,15 @@ export default function AdminDashboard({ navigation }) {
       loadLocalStatusChanges();
       fetchStats();
     }
-  }, [currentUser, isAdmin, navigation, checkAdminStatus, restoreAdminStatus]);
+  }, [
+    currentUser,
+    isAdmin,
+    navigation,
+    checkAdminStatus,
+    restoreAdminStatus,
+    loadLocalStatusChanges,
+    fetchStats,
+  ]);
 
   // Set up real-time refresh interval
   useEffect(() => {
@@ -140,7 +148,7 @@ export default function AdminDashboard({ navigation }) {
         }
       };
     }
-  }, [isAdmin, currentUser]);
+  }, [isAdmin, currentUser, loadLocalStatusChanges, fetchStats]);
 
   // Cleanup interval when component unmounts
   useEffect(() => {
@@ -164,7 +172,7 @@ export default function AdminDashboard({ navigation }) {
     }
   };
 
-  const fetchStats = async (showUpdating = true) => {
+  const fetchStats = useCallback(async (showUpdating = true) => {
     if (showUpdating) {
       setIsUpdating(true);
     }
@@ -314,7 +322,7 @@ export default function AdminDashboard({ navigation }) {
         ],
       );
     }
-  };
+  }, []);
 
   const onRefresh = () => {
     setRefreshing(true);

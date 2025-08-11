@@ -151,3 +151,57 @@
  
 # Keep all classes with @ReactModule annotation
 -keep @com.facebook.react.bridge.annotations.ReactModule class *
+
+# Additional React Native ProGuard rules for production
+-keep class com.facebook.react.bridge.** { *; }
+-keep class com.facebook.react.uimanager.** { *; }
+-keep class com.facebook.react.views.** { *; }
+
+# Keep React Native Image Picker
+-keep class com.imagepicker.** { *; }
+-dontwarn com.imagepicker.**
+
+# Keep React Native Gesture Handler
+-keep class com.swmansion.gesturehandler.** { *; }
+-dontwarn com.swmansion.gesturehandler.**
+
+# Keep React Native Reanimated
+-keep class com.swmansion.reanimated.** { *; }
+-dontwarn com.swmansion.reanimated.**
+
+# Keep React Native Screens
+-keep class com.swmansion.rnscreens.** { *; }
+-dontwarn com.swmansion.rnscreens.**
+
+# Keep React Native Safe Area Context
+-keep class com.th3rdwave.safeareacontext.** { *; }
+-dontwarn com.th3rdwave.safeareacontext.**
+
+# Keep React Native Picker
+-keep class com.reactnativepicker.** { *; }
+-dontwarn com.reactnativepicker.**
+
+# Keep React Native DateTime Picker
+-keep class com.reactcommunity.rndatetimepicker.** { *; }
+-dontwarn com.reactcommunity.rndatetimepicker.**
+
+# General React Native rules
+-keep class com.facebook.react.** { *; }
+-keep class com.facebook.hermes.** { *; }
+-keep class com.facebook.jni.** { *; }
+
+# Keep JavaScript interface
+-keepclassmembers class * {
+    @com.facebook.react.bridge.ReactMethod *;
+}
+
+# Keep all native methods
+-keepclasseswithmembernames class * {
+    native <methods>;
+}
+
+# Keep all classes with @Keep annotation
+-keep @androidx.annotation.Keep class *
+-keepclassmembers class * {
+    @androidx.annotation.Keep *;
+}

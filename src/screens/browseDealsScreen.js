@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useMemo,
+  useCallback,
+} from 'react';
 import {
   View,
   Text,
@@ -115,7 +121,7 @@ export default function BrowseDealsScreen({ navigation, route }) {
     });
 
     return unsubscribe;
-  }, [navigation, currentUser]);
+  }, [navigation, currentUser, fetchApprovedCoupons, loadPurchasedCoupons]);
 
   // Add periodic refresh every 30 seconds when screen is active
   useEffect(() => {
@@ -125,7 +131,7 @@ export default function BrowseDealsScreen({ navigation, route }) {
     }, 30000); // 30 seconds
 
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchApprovedCoupons]);
 
   // Cleanup timeouts when component unmounts
   useEffect(() => {
@@ -157,7 +163,7 @@ export default function BrowseDealsScreen({ navigation, route }) {
     if (currentUser) {
       loadPurchasedCoupons();
     }
-  }, [currentUser]);
+  }, [currentUser, loadPurchasedCoupons]);
 
   // Initialize filtered data when main data changes
   useEffect(() => {
@@ -189,7 +195,7 @@ export default function BrowseDealsScreen({ navigation, route }) {
     return () => {
       if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [brandSearchQuery, brands]);
+  }, [brandSearchQuery, brands, brandSearchTimeout]);
 
   // Debounced category search
   useEffect(() => {
@@ -215,7 +221,7 @@ export default function BrowseDealsScreen({ navigation, route }) {
     return () => {
       if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [categorySearchQuery, categories]);
+  }, [categorySearchQuery, categories, categorySearchTimeout]);
 
   // Debug: Monitor coupons state changes
 
@@ -237,7 +243,7 @@ export default function BrowseDealsScreen({ navigation, route }) {
   };
 
   // Function to load user's purchased coupons
-  const loadPurchasedCoupons = async () => {
+  const loadPurchasedCoupons = useCallback(async () => {
     if (!currentUser) return;
 
     try {
@@ -282,10 +288,10 @@ export default function BrowseDealsScreen({ navigation, route }) {
     } catch (error) {
       console.error('Error loading purchased coupons:', error);
     }
-  };
+  }, [currentUser]);
 
   // Fetch categories and brands from API with caching
-  const fetchCategories = async () => {
+  const fetchCategories = useCallback(async () => {
     const result = await fetchBrandsAndCategories();
     if (result.success) {
       setCategories(result.categories);
@@ -298,7 +304,7 @@ export default function BrowseDealsScreen({ navigation, route }) {
       setCategories([]);
       setBrands([]);
     }
-  };
+  }, []);
 
   // Generic fetch function to reduce redundancy
   const fetchCouponsWithFilter = async (url, filterType = 'all') => {
@@ -365,32 +371,37 @@ export default function BrowseDealsScreen({ navigation, route }) {
   };
 
   // Fetch ALL admin-approved coupons from API (both admin-uploaded and user-uploaded)
-  const fetchApprovedCoupons = async () => {
+  const fetchApprovedCoupons = useCallback(async () => {
     await fetchCouponsWithFilter(buildApiUrl(API_ENDPOINTS.COUPONS.ALL), 'all');
-  };
+  }, []);
 
   // Fetch coupons by category
-  const fetchCouponsByCategory = async categoryName => {
+  const fetchCouponsByCategory = useCallback(async categoryName => {
     await fetchCouponsWithFilter(
       `${buildApiUrl(
         API_ENDPOINTS.COUPONS.BY_CATEGORY,
       )}?categoryName=${encodeURIComponent(categoryName)}`,
       'category',
     );
-  };
+  }, []);
 
   // Fetch coupons by brand
-  const fetchCouponsByBrand = async brandName => {
+  const fetchCouponsByBrand = useCallback(async brandName => {
     await fetchCouponsWithFilter(
       `${buildApiUrl(
         API_ENDPOINTS.BRANDS.COUPONS_BY_BRAND,
       )}?brandName=${encodeURIComponent(brandName)}`,
       'brand',
     );
-  };
+  }, []);
 
   const handleBuyNow = async coupon => {
     try {
+      console.log('🔐 Buy Now clicked - Auth state:', {
+        isAuthenticated,
+        currentUser: !!currentUser,
+      });
+
       // Validate coupon data
       if (!coupon || !coupon.couponId) {
         Alert.alert('Error', 'Invalid coupon data');
@@ -403,7 +414,8 @@ export default function BrowseDealsScreen({ navigation, route }) {
       }
 
       // If user is not authenticated, go to login
-      if (!currentUser) {
+      if (!isAuthenticated) {
+        console.log('🔐 User not authenticated, navigating to Login');
         navigation.navigate('Login', {
           redirectTo: 'Payment',
           coupon: coupon,
@@ -412,7 +424,7 @@ export default function BrowseDealsScreen({ navigation, route }) {
       }
 
       // If user is authenticated, go directly to payment
-      // The OTP verification will handle user registration status
+      console.log('🔐 User authenticated, navigating to Payment');
       navigation.navigate('Payment', { coupon });
     } catch (error) {
       console.error('❌ Error in handleBuyNow:', error);
@@ -494,7 +506,7 @@ export default function BrowseDealsScreen({ navigation, route }) {
     return fallbackBrandName || 'Unknown Brand';
   };
 
-  const getFilteredCoupons = () => {
+  const getFilteredCoupons = useCallback(() => {
     let filtered = coupons;
 
     // Only apply filtering if we have coupons loaded
@@ -579,7 +591,7 @@ export default function BrowseDealsScreen({ navigation, route }) {
     }
 
     return filtered;
-  };
+  }, [coupons, route.params, searchQuery]);
 
   // Using centralized brand configuration
   // The getBrandLogo function is now imported from brandConfig.js
@@ -612,7 +624,7 @@ export default function BrowseDealsScreen({ navigation, route }) {
       console.log('📊 Total coupons:', coupons.length);
       console.log('✅ Filtered coupons:', result.length);
     }
-  }, [coupons, route.params, searchQuery]);
+  }, [coupons, route.params, searchQuery, getFilteredCoupons]);
 
   const renderCouponCard = ({ item: coupon, index }) => {
     const isTermsExpanded = expandedTerms === coupon.couponId;
@@ -1470,16 +1482,16 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#eee',
   },
-  screenshotPreviewContainer: {
+  screenshotPreviewContainerMargin: {
     marginBottom: 15,
   },
-  screenshotPreviewTitle: {
+  screenshotPreviewTitleMargin: {
     fontSize: 14,
     fontWeight: 'bold',
     color: '#333',
     marginBottom: 8,
   },
-  screenshotPreviewImage: {
+  screenshotPreviewImageLarge: {
     width: '100%',
     height: 150,
     borderRadius: 6,
@@ -1520,13 +1532,13 @@ const styles = StyleSheet.create({
     color: '#c53030',
     marginBottom: 8,
   },
-  termsTitle: {
+  termsTitleLarge: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#333',
     marginBottom: 10,
   },
-  termsImage: {
+  termsImageLarge: {
     width: '100%',
     height: 200,
     borderRadius: 8,
@@ -1546,7 +1558,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 8,
   },
-  termsText: {
+  termsTextLarge: {
     fontSize: 14,
     color: '#666',
     lineHeight: 20,

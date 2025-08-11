@@ -46,11 +46,11 @@ export const getCategoryIcon = categoryName => {
     Makeup: require('../assets/Beauty_and_health.jpeg'),
 
     // Food & Dining
-    'Food & Dining': require('../assets/logo.png'),
-    Food: require('../assets/logo.png'),
-    Restaurants: require('../assets/logo.png'),
-    Dining: require('../assets/logo.png'),
-    Beverages: require('../assets/logo.png'),
+    'Food & Dining': require('../assets/food.png'),
+    Food: require('../assets/food.png'),
+    Restaurants: require('../assets/food.png'),
+    Dining: require('../assets/food.png'),
+    Beverages: require('../assets/food.png'),
 
     // Travel
     Travel: require('../assets/Travel.jpeg'),

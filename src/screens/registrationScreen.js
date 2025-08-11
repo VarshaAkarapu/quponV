@@ -24,21 +24,33 @@ export default function RegistrationScreen({ route, navigation }) {
     try {
       // Use the correct API endpoint and method
       const result = await userAPI.completeProfile(userId, {
-        name,
+        firstName: name,
+        lastName: '',
         email,
+        upi: '',
+        dob: new Date().toISOString().split('T')[0],
       });
 
-      if (result.success) {
-        // Navigate based on redirectTo parameter
+      // Backend returns { message: "Profile completed", data: updatedUser }
+      if (result.message === 'Profile completed' || result.data) {
+        // Handle navigation based on where user came from
         if (redirectTo === 'Payment' && coupon) {
+          // User came from payment flow - go back to payment
           navigation.reset({
             index: 0,
             routes: [{ name: 'Payment', params: { coupon } }],
           });
-        } else {
+        } else if (redirectTo === 'UploadCoupon') {
+          // User came from upload flow - go back to upload
           navigation.reset({
             index: 0,
-            routes: [{ name: redirectTo || 'UploadCoupon' }],
+            routes: [{ name: 'UploadCoupon' }],
+          });
+        } else {
+          // Default - go to home screen
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'Home' }],
           });
         }
       } else {

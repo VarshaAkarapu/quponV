@@ -11,7 +11,6 @@ import {
 import { useNavigation, useRoute } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import auth from '@react-native-firebase/auth';
-import { buildApiUrl, API_ENDPOINTS } from '../config/apiConfig';
 
 export default function RegisterScreen() {
   const [firstName, setFirstName] = useState('');
@@ -109,30 +108,53 @@ export default function RegisterScreen() {
     }
 
     try {
-      const user = auth().currentUser;
-      const idToken = await user.getIdToken();
+      const userId = route.params?.userId;
+      if (!userId) {
+        throw new Error('User ID is required for registration');
+      }
 
-      const res = await fetch(buildApiUrl(API_ENDPOINTS.USERS.REGISTER), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${idToken}`,
+      const res = await fetch(
+        `https://m8igs45g3a.execute-api.ap-south-1.amazonaws.com/dev/api/users/register/${userId}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            firstName,
+            lastName,
+            email,
+            upi: upiId,
+            dob: dob.toISOString().split('T')[0], // Format as YYYY-MM-DD
+          }),
         },
-        body: JSON.stringify({
-          firstName,
-          lastName,
-          email,
-          upi: upiId,
-          dob: dob.toISOString().split('T')[0], // Format as YYYY-MM-DD
-        }),
-      });
+      );
 
       const data = await res.json();
       if (res.ok) {
-        navigation.reset({
-          index: 0,
-          routes: [{ name: route.params.redirectTo || 'UploadCoupon' }],
-        });
+        // Handle navigation based on where user came from
+        const redirectTo = route.params?.redirectTo;
+        const coupon = route.params?.coupon;
+
+        if (redirectTo === 'Payment' && coupon) {
+          // User came from payment flow - go back to payment
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'Payment', params: { coupon } }],
+          });
+        } else if (redirectTo === 'UploadCoupon') {
+          // User came from upload flow - go back to upload
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'UploadCoupon' }],
+          });
+        } else {
+          // Default - go to home screen
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'Home' }],
+          });
+        }
       } else {
         throw new Error(data.message || 'Registration failed');
       }

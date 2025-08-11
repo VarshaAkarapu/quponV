@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -27,9 +27,9 @@ export default function AdminProfile({ navigation }) {
   useEffect(() => {
     loadAdminData();
     fetchAdminStats();
-  }, []);
+  }, [loadAdminData, fetchAdminStats]);
 
-  const loadAdminData = async () => {
+  const loadAdminData = useCallback(async () => {
     try {
       const adminData = await AsyncStorage.getItem('adminUser');
       if (adminData) {
@@ -38,9 +38,9 @@ export default function AdminProfile({ navigation }) {
     } catch (error) {
       console.error('Error loading admin data:', error);
     }
-  };
+  }, []);
 
-  const fetchAdminStats = async () => {
+  const fetchAdminStats = useCallback(async () => {
     try {
       const [couponsResponse, usersResponse] = await Promise.all([
         fetch(
@@ -83,7 +83,7 @@ export default function AdminProfile({ navigation }) {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [adminUser]);
 
   const onRefresh = () => {
     setRefreshing(true);

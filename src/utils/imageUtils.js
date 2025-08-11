@@ -10,8 +10,8 @@
 export const bytesToBase64 = bytes => {
   try {
     // Method 1: Use Buffer if available (Node.js environment)
-    if (typeof Buffer !== 'undefined') {
-      return Buffer.from(bytes).toString('base64');
+    if (typeof global.Buffer !== 'undefined') {
+      return global.Buffer.from(bytes).toString('base64');
     }
 
     // Method 2: Use global btoa if available
@@ -167,7 +167,9 @@ export const createBlobUrlFromBase64 = (
 ) => {
   try {
     // Convert base64 to bytes
-    const binaryString = atob(base64String);
+    const binaryString = global.atob
+      ? global.atob(base64String)
+      : global.Buffer.from(base64String, 'base64').toString('binary');
     const bytes = new Uint8Array(binaryString.length);
     for (let i = 0; i < binaryString.length; i++) {
       bytes[i] = binaryString.charCodeAt(i);
@@ -669,7 +671,9 @@ export const processImageForUpload = (selectedImage, options = {}) => {
 export const extractTextFromBase64 = base64String => {
   try {
     // Try to decode base64 to see if it contains text
-    const decodedString = atob(base64String);
+    const decodedString = global.atob
+      ? global.atob(base64String)
+      : Buffer.from(base64String, 'base64').toString('binary');
 
     // Check if the decoded data contains readable text
     const textPattern = /[A-Za-z\s.,!?;:'"()\-_]+/g;
@@ -711,7 +715,9 @@ export const bytesToHumanReadable = bytes => {
  */
 export const analyzeBase64Data = base64String => {
   try {
-    const decodedBytes = atob(base64String);
+    const decodedBytes = global.atob
+      ? global.atob(base64String)
+      : global.Buffer.from(base64String, 'base64').toString('binary');
     const byteArray = new Uint8Array(decodedBytes.length);
 
     for (let i = 0; i < decodedBytes.length; i++) {

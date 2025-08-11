@@ -5,13 +5,16 @@ import RazorpayCheckout from 'react-native-razorpay';
 export default function PaymentScreen({ route, navigation }) {
   const { coupon } = route.params || {};
 
+  console.log('💳 PaymentScreen loaded with coupon:', coupon);
+
   useEffect(() => {
+    console.log('💳 PaymentScreen useEffect triggered');
     if (!coupon || !coupon.price) {
+      console.log('💳 Invalid coupon data:', coupon);
       Alert.alert('Invalid Coupon', 'Missing coupon data');
       navigation.goBack();
       return;
     }
-g
     // Add a small delay to show the white background before opening Razorpay
     const timer = setTimeout(() => {
       // Resolve local logo asset to a URI usable by Razorpay

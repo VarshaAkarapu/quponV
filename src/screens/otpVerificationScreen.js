@@ -18,6 +18,7 @@ import auth from '@react-native-firebase/auth';
 import { buildApiUrl, API_ENDPOINTS } from '../config/apiConfig';
 import { getConfirmationResult, setConfirmationResult } from './authStore';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function OtpScreen() {
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
@@ -29,6 +30,7 @@ export default function OtpScreen() {
   const navigation = useNavigation();
   const route = useRoute();
   const inputRefs = useRef([]);
+  const { updateUserAfterLogin } = useAuth();
 
   useEffect(() => {
     // Start resend timer
@@ -156,6 +158,9 @@ export default function OtpScreen() {
           isAdmin,
           redirectTo: route.params.redirectTo,
         });
+
+        // Update AuthContext with user data
+        await updateUserAfterLogin(userObj);
 
         // Check if user is admin first
         if (isAdmin) {

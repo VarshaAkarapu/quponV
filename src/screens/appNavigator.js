@@ -3,7 +3,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { useAuth } from '../contexts/AuthContext';
 import LoginScreen from './loginScreen';
 import OtpScreen from './otpVerificationScreen';
-import RegistrationScreen from './registrationScreen';
+import RegistrationScreen from './RegisterScreen';
 import UploadCouponScreen from './uploadCouponScreen';
 import HomeScreen from './homeScreen';
 import SplashScreen from './splashScreen';

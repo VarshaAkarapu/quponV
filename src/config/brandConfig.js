@@ -67,7 +67,6 @@ export const BRAND_LOGOS = {
   'ease my trip': require('../assets/easemytrip.jpeg'),
   Agoda: require('../assets/Agoda.png'),
   'Hotels.com': require('../assets/Hotels_com.png'),
-  'Hotels.com': require('../assets/Hotels_com.png'),
   'hotels.com': require('../assets/Hotels_com.png'),
   HotelsCom: require('../assets/Hotels_com.png'),
   Emirates: require('../assets/Emirates.png'),

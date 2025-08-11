@@ -1,7 +1,13 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+} from 'react';
 import auth from '@react-native-firebase/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { isAdminRole } from '../utils/authUtils';
+// import { isAdminRole } from '../utils/authUtils'; // Unused import
 import { initializeFirebase } from '../utils/firebaseInit';
 
 const AuthContext = createContext();
@@ -53,7 +59,7 @@ export const AuthProvider = ({ children }) => {
   }, [currentUser, isAuthenticated]);
 
   // Manual admin status check function
-  const checkAdminStatus = async () => {
+  const checkAdminStatus = useCallback(async () => {
     try {
       const adminUserData = await AsyncStorage.getItem('adminUser');
       if (adminUserData) {
@@ -101,7 +107,7 @@ export const AuthProvider = ({ children }) => {
       console.error('Error in manual admin check:', error);
       return false;
     }
-  };
+  }, [currentUser]);
 
   // Load user data from AsyncStorage
   const loadUserData = async () => {
@@ -234,6 +240,12 @@ export const AuthProvider = ({ children }) => {
               } else {
                 existingData.lastLogin = new Date().toISOString();
                 await saveUserData(existingData);
+
+                // Restore admin status from stored user data
+                if (existingData.isAdmin) {
+                  console.log('🔐 Restoring admin status from stored data');
+                  setIsAdmin(true);
+                }
               }
             } else {
               // User is signed out
@@ -253,9 +265,18 @@ export const AuthProvider = ({ children }) => {
           try {
             const storedUserData = await AsyncStorage.getItem('userData');
             if (storedUserData) {
-              const userData = JSON.parse(storedUserData);
-              setUserData(userData);
+              const parsedUserData = JSON.parse(storedUserData);
+              setUserData(parsedUserData);
               setIsAuthenticated(true);
+
+              // Restore admin status from stored data
+              if (parsedUserData.isAdmin) {
+                console.log(
+                  '🔄 Restoring admin status from storage in fallback mode',
+                );
+                setIsAdmin(true);
+              }
+
               console.log('🔄 Loaded user data from storage in fallback mode');
             }
           } catch (storageError) {
@@ -271,9 +292,18 @@ export const AuthProvider = ({ children }) => {
         try {
           const storedUserData = await AsyncStorage.getItem('userData');
           if (storedUserData) {
-            const userData = JSON.parse(storedUserData);
-            setUserData(userData);
+            const parsedUserData = JSON.parse(storedUserData);
+            setUserData(parsedUserData);
             setIsAuthenticated(true);
+
+            // Restore admin status from stored data
+            if (parsedUserData.isAdmin) {
+              console.log(
+                '🔄 Restoring admin status from storage in fallback mode',
+              );
+              setIsAdmin(true);
+            }
+
             console.log('🔄 Loaded user data from storage in fallback mode');
           }
         } catch (storageError) {
@@ -289,7 +319,50 @@ export const AuthProvider = ({ children }) => {
         unsubscribe();
       }
     };
-  }, []);
+  }, [checkAdminStatus]);
+
+  // Function to restore admin status from stored data
+  const restoreAdminStatus = async () => {
+    try {
+      const storedUserData = await AsyncStorage.getItem('userData');
+      if (storedUserData) {
+        const parsedUserData = JSON.parse(storedUserData);
+        if (parsedUserData.isAdmin) {
+          console.log('🔐 Restoring admin status from stored data');
+          setIsAdmin(true);
+          return true;
+        }
+      }
+      return false;
+    } catch (error) {
+      console.error('Error restoring admin status:', error);
+      return false;
+    }
+  };
+
+  // Function to update user data after successful login
+  const updateUserAfterLogin = async backendUserData => {
+    try {
+      const newUserData = {
+        userId: backendUserData.userId,
+        phoneNumber: backendUserData.phone,
+        isAdmin: backendUserData.role === 'admin',
+        isProfileCompleted: backendUserData.isProfileCompleted || false,
+        firstName: backendUserData.firstName,
+        lastName: backendUserData.lastName,
+        email: backendUserData.email,
+        lastLogin: new Date().toISOString(),
+      };
+
+      await saveUserData(newUserData);
+      setIsAuthenticated(true);
+      setIsAdmin(backendUserData.role === 'admin');
+
+      console.log('🔐 Updated user data after login:', newUserData);
+    } catch (error) {
+      console.error('Error updating user data after login:', error);
+    }
+  };
 
   const value = {
     currentUser,
@@ -303,6 +376,8 @@ export const AuthProvider = ({ children }) => {
     clearUserData,
     checkAdminStatus,
     checkUserExists,
+    updateUserAfterLogin,
+    restoreAdminStatus,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

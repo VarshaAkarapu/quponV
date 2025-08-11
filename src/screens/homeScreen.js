@@ -45,15 +45,33 @@ const responsiveValues = getResponsiveValues(width);
 const { isTablet, isLargeScreen, menuWidth } = responsiveValues;
 
 export default function HomeScreen({ navigation }) {
-  const { isAdmin } = useAuth();
+  const { isAdmin, isAuthenticated, signOut, userData, restoreAdminStatus } =
+    useAuth();
+
+  // Debug admin status
+  useEffect(() => {
+    console.log('🏠 HomeScreen - Admin Status Debug:', {
+      isAdmin,
+      isAuthenticated,
+      userData: userData
+        ? {
+            userId: userData.userId,
+            phoneNumber: userData.phoneNumber,
+            isAdmin: userData.isAdmin,
+            role: userData.role,
+          }
+        : null,
+    });
+  }, [isAdmin, isAuthenticated, userData]);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [filteredBrands, setFilteredBrands] = useState([]);
   const searchTimeoutRef = useRef(null);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showAboutMenu, setShowAboutMenu] = useState(false);
   const [popularBrands, setPopularBrands] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [hasApprovedCoupons, setHasApprovedCoupons] = useState(false);
+  const [hasAdminCoupons, setHasAdminCoupons] = useState(false);
   const [loading, setLoading] = useState(true);
   const [brandsLoading, setBrandsLoading] = useState(true);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
@@ -66,6 +84,14 @@ export default function HomeScreen({ navigation }) {
   useEffect(() => {
     loadDynamicData();
   }, []);
+
+  // Restore admin status when component mounts
+  useEffect(() => {
+    if (isAuthenticated && !isAdmin) {
+      console.log('🏠 HomeScreen - Attempting to restore admin status');
+      restoreAdminStatus();
+    }
+  }, [isAuthenticated, isAdmin, restoreAdminStatus]);
 
   // Listen for screen orientation changes
   useEffect(() => {
@@ -147,15 +173,15 @@ export default function HomeScreen({ navigation }) {
       }
       setCategoriesLoading(false);
 
-      // Handle coupons data → determine if there are approved coupons
+      // Handle coupons data → determine if there are approved coupons (admin-uploaded)
       if (couponsData.status === 'fulfilled') {
         const coupons = couponsData.value || [];
         const anyApproved = coupons.some(c => c && c.status === 'approved');
-        setHasApprovedCoupons(anyApproved);
-        console.log('📊 Approved coupons exist:', anyApproved);
+        setHasAdminCoupons(anyApproved);
+        console.log('📊 Approved coupons exist (admin-uploaded):', anyApproved);
       } else {
         console.error('Failed to load coupons:', couponsData.reason);
-        setHasApprovedCoupons(false);
+        setHasAdminCoupons(false);
       }
 
       console.log('🔍 Dynamic data loaded successfully');
@@ -304,8 +330,8 @@ export default function HomeScreen({ navigation }) {
 
   const renderCategoriesSection = () => {
     const categoriesToShow = categories || [];
-    const showHorizontal = hasApprovedCoupons && categoriesToShow.length > 0;
-    const showGrid = !hasApprovedCoupons && categoriesToShow.length > 0;
+    const showHorizontal = hasAdminCoupons && categoriesToShow.length > 0;
+    const showGrid = !hasAdminCoupons && categoriesToShow.length > 0;
 
     return (
       <View style={styles.section}>
@@ -410,7 +436,7 @@ export default function HomeScreen({ navigation }) {
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.menuButton}
-          onPress={() => setShowProfileMenu(true)}
+          onPress={() => setShowAboutMenu(true)}
         >
           <Text style={styles.menuIcon}>☰</Text>
         </TouchableOpacity>
@@ -630,7 +656,7 @@ export default function HomeScreen({ navigation }) {
           />
           <View style={styles.menuContent}>
             <View style={styles.menuHeader}>
-              <Text style={styles.menuTitle}>Menu</Text>
+              <Text style={styles.menuTitle}>Profile</Text>
               <TouchableOpacity onPress={() => setShowProfileMenu(false)}>
                 <Text style={styles.closeButton}>✕</Text>
               </TouchableOpacity>
@@ -639,6 +665,9 @@ export default function HomeScreen({ navigation }) {
               <TouchableOpacity
                 style={styles.menuItem}
                 onPress={() => {
+                  console.log(
+                    '🔐 Admin button clicked, navigating to AdminDashboard',
+                  );
                   setShowProfileMenu(false);
                   navigation.navigate('AdminDashboard');
                 }}
@@ -646,6 +675,13 @@ export default function HomeScreen({ navigation }) {
                 <Text style={styles.menuItemText}>Admin</Text>
               </TouchableOpacity>
             )}
+            {/* Debug info - remove this after testing */}
+            <View style={{ padding: 10, backgroundColor: '#f0f0f0' }}>
+              <Text style={{ fontSize: 12, color: '#666' }}>
+                Debug: isAdmin={isAdmin ? 'true' : 'false'}, isAuth=
+                {isAuthenticated ? 'true' : 'false'}
+              </Text>
+            </View>
             <TouchableOpacity
               style={styles.menuItem}
               onPress={() => {
@@ -653,25 +689,128 @@ export default function HomeScreen({ navigation }) {
                 navigation.navigate('Profile');
               }}
             >
-              <Text style={styles.menuItemText}>Profile</Text>
+              <Text style={styles.menuItemText}>Your Information</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.menuItem}
               onPress={() => {
                 setShowProfileMenu(false);
-                navigation.navigate('Login');
+                navigation.navigate('UserCoupons');
               }}
             >
-              <Text style={styles.menuItemText}>Login</Text>
+              <Text style={styles.menuItemText}>Coupons Uploaded</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.menuItem}
               onPress={() => {
                 setShowProfileMenu(false);
+                navigation.navigate('PurchasedCoupons');
+              }}
+            >
+              <Text style={styles.menuItemText}>Coupons Purchased</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => {
+                setShowProfileMenu(false);
+                navigation.navigate('UserLevel');
+              }}
+            >
+              <Text style={styles.menuItemText}>User Level</Text>
+            </TouchableOpacity>
+            {isAuthenticated ? (
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={async () => {
+                  setShowProfileMenu(false);
+                  await signOut();
+                  navigation.reset({
+                    index: 0,
+                    routes: [{ name: 'Home' }],
+                  });
+                }}
+              >
+                <Text style={styles.menuItemText}>Logout</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => {
+                  setShowProfileMenu(false);
+                  navigation.navigate('Login');
+                }}
+              >
+                <Text style={styles.menuItemText}>Login</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+      )}
+
+      {/* About Us Menu Modal */}
+      {showAboutMenu && (
+        <View style={styles.menuOverlay}>
+          <TouchableOpacity
+            style={styles.menuBackdrop}
+            onPress={() => setShowAboutMenu(false)}
+          />
+          <View style={styles.menuContent}>
+            <View style={styles.menuHeader}>
+              <Text style={styles.menuTitle}>Menu</Text>
+              <TouchableOpacity onPress={() => setShowAboutMenu(false)}>
+                <Text style={styles.closeButton}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => {
+                setShowAboutMenu(false);
                 navigation.navigate('AboutUs');
               }}
             >
               <Text style={styles.menuItemText}>About Us</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => {
+                setShowAboutMenu(false);
+                Linking.openURL(
+                  'https://www.facebook.com/share/1FFdNCkPm4/?mibextid=wwXIfr',
+                );
+              }}
+            >
+              <Text style={styles.menuItemText}>Facebook</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => {
+                setShowAboutMenu(false);
+                Linking.openURL(
+                  'https://x.com/_qupon?s=21&t=QXETnOLLjTYYRM5cun62Xw',
+                );
+              }}
+            >
+              <Text style={styles.menuItemText}>Twitter</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => {
+                setShowAboutMenu(false);
+                Linking.openURL(
+                  'https://www.instagram.com/qupon.india/profilecard/?igsh=MTVjb25vMW55Z2xyMA==',
+                );
+              }}
+            >
+              <Text style={styles.menuItemText}>Instagram</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => {
+                setShowAboutMenu(false);
+                Linking.openURL('mailto:Businessqupon@gmail.com');
+              }}
+            >
+              <Text style={styles.menuItemText}>Contact Us</Text>
             </TouchableOpacity>
           </View>
         </View>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -27,7 +27,7 @@ export default function AdminAnalytics({ navigation }) {
   useEffect(() => {
     loadLocalStatusChanges();
     fetchAnalytics();
-  }, []);
+  }, [loadLocalStatusChanges, fetchAnalytics]);
 
   // Add focus listener to reload data when returning to screen
   useEffect(() => {
@@ -37,10 +37,10 @@ export default function AdminAnalytics({ navigation }) {
     });
 
     return unsubscribe;
-  }, [navigation]);
+  }, [navigation, loadLocalStatusChanges, fetchAnalytics]);
 
   // Load local status changes from AsyncStorage
-  const loadLocalStatusChanges = async () => {
+  const loadLocalStatusChanges = useCallback(async () => {
     try {
       const savedChanges = await AsyncStorage.getItem('couponStatusChanges');
       if (savedChanges) {
@@ -49,9 +49,9 @@ export default function AdminAnalytics({ navigation }) {
     } catch (error) {
       console.error('Error loading local status changes:', error);
     }
-  };
+  }, []);
 
-  const fetchAnalytics = async () => {
+  const fetchAnalytics = useCallback(async () => {
     try {
       setLoading(true);
 
@@ -146,7 +146,7 @@ export default function AdminAnalytics({ navigation }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [localStatusChanges]);
 
   const renderStatCard = (title, value, subtitle, color = '#B71C1C') => (
     <View style={styles.statCard}>
